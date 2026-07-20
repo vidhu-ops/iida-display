@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}IIda: IIDATECH{% endblock %}
+
+{% block content %}
+<div class="bg-black py-4">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-lg-10 mx-auto">
+                <h1 class="display-5 fw-bold text-white mb-2 text-center">IIDATECH</h1>
+            </div>
+        </div>
+
+        <!-- Lock Overlay with Credit Cost -->
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div id="figma-overlay" class="card bg-dark border-warning py-5 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-lock fa-3x text-warning mb-4"></i>
+                        <h3 class="mb-3 text-white">Unlock Workspace</h3>
+                        <p class="text-muted mb-4">
+                            This workspace requires <strong class="text-warning">10 credits</strong> to access.<br>
+                            Your current balance: <strong class="text-info">{{ current_user.credits if current_user.is_authenticated else 0 }} credits</strong>
+                        </p>
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.credits >= 10 %}
+                                <button id="unlock-figma-btn" class="btn btn-lg btn-warning">
+                                    <i class="fas fa-unlock me-2"></i>Unlock Workspace (10 Credits)
+                                </button>
+                            {% else %}
+                                <div class="alert alert-danger mb-0">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    <strong>Insufficient Credits:</strong> You need 10 credits but only have {{ current_user.credits }}. 
+                                    <a href="{{ url_for('buy_credits') }}" class="alert-link">Buy credits</a> to continue.
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-muted mb-3">Please log in to access this workspace.</p>
+                            <a href="{{ url_for('login') }}" class="btn btn-lg btn-primary me-2">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </a>
+                            <a href="{{ url_for('register') }}" class="btn btn-lg btn-success">
+                                <i class="fas fa-user-plus me-2"></i>Register
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Figma Container -->
+                <div id="figma-container" class="card bg-dark border-success overflow-hidden mt-4" style="height: 900px; display: none;">
+                    <div class="card-header bg-dark border-bottom d-flex justify-content-between align-items-center py-3">
+                        <div class="text-white fw-bold">
+                            <i class="fas fa-check-circle me-2 text-success"></i>Workspace Active
+                        </div>
+                        <small class="text-success">10 Credits Deducted</small>
+                    </div>
+                    <iframe 
+                        id="figma-iframe"
+                        src="https://tart-bulk-02479240.figma.site" 
+                        style="width: 100%; height: calc(100% - 50px); border: none;"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const unlockBtn = document.getElementById('unlock-figma-btn');
+    const figmaOverlay = document.getElementById('figma-overlay');
+    const figmaContainer = document.getElementById('figma-container');
+
+    if (unlockBtn) {
+        unlockBtn.addEventListener('click', function() {
+            // Disable button to prevent multiple clicks
+            unlockBtn.disabled = true;
+            unlockBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+            // Fetch to deduct credits and unlock
+            fetch('{{ url_for("figma_workspace") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide overlay, show workspace
+                    figmaOverlay.style.display = 'none';
+                    figmaContainer.style.display = 'block';
+
+                    // Update credits in header (if exists)
+                    const creditDisplay = document.querySelector('[data-credits]');
+                    if (creditDisplay) {
+                        creditDisplay.textContent = data.remaining_credits + ' Credits';
+                    }
+                } else if (data.redirect) {
+                    if (confirm('You do not have enough credits to unlock this workspace. Click OK to buy credits.')) {
+                        window.location.href = data.redirect;
+                    }
+                } else {
+                    alert(data.message || 'Error: ' + data.error);
+                    unlockBtn.disabled = false;
+                    unlockBtn.innerHTML = '<i class="fas fa-unlock me-2"></i>Unlock Workspace (10 Credits)';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to unlock workspace. Please try again.');
+                unlockBtn.disabled = false;
+                unlockBtn.innerHTML = '<i class="fas fa-unlock me-2"></i>Unlock Workspace (10 Credits)';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

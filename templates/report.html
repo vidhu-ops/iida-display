@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Research Report - IDA{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Report Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h2 class="card-title mb-2">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Research Report
+                            </h2>
+                            <p class="mb-0 opacity-75">
+                                Generated on {{ report.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-light text-dark fs-6">Report #{{ report.id }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="text-primary mb-2">
+                            <i class="fas fa-question-circle me-2"></i>
+                            Research Question
+                        </h5>
+                        <div class="p-3 bg-dark rounded">
+                            <p class="mb-0 fs-5 fw-medium">{{ report.question }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if report.category or report.subcategory %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Focus Areas</h6>
+                        <div>
+                            {% if report.category %}
+                                <span class="badge bg-secondary me-2">
+                                    <i class="fas fa-tag me-1"></i>{{ report.category }}
+                                </span>
+                            {% endif %}
+                            {% if report.subcategory %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-sitemap me-1"></i>{{ report.subcategory }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Content Area -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Comprehensive Analysis
+                    </h4>
+                </div>
+                <div class="card-body p-0">
+                    <div id="dynamic-report-container">
+                        {{ report.report_content|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex gap-3 flex-wrap justify-content-between">
+                <div>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Generate New Report
+                    </a>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>
+                        Print Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .section-wrapper {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .section-header {
+        padding: 1.5rem;
+        margin: 0;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.02);
+        transition: background 0.3s ease;
+        font-size: 1.25rem;
+    }
+    .section-header:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .section-header.active {
+        background: rgba(var(--bs-primary-rgb), 0.1);
+        border-left: 4px solid var(--bs-primary);
+    }
+    .section-header i {
+        transition: transform 0.3s ease;
+    }
+    .section-header.active i {
+        transform: rotate(180deg);
+    }
+    .section-content {
+        display: none;
+        padding: 2rem;
+        background: rgba(0, 0, 0, 0.2);
+        line-height: 1.8;
+    }
+    .section-content.show {
+        display: block;
+    }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadSection(sectionId) {
+    const header = document.querySelector(`.section-wrapper[data-section-id="${sectionId}"] .section-header`);
+    const content = document.getElementById(`section-content-${sectionId}`);
+    const loader = content.querySelector('.loader-container');
+    const contentArea = content.querySelector('.content-area');
+    const container = document.getElementById('dynamic-report-container').querySelector('.report-content');
+    
+    const question = container.dataset.question;
+    const category = container.dataset.category;
+    const subcategory = container.dataset.subcategory;
+
+    if (header.classList.contains('active')) {
+        header.classList.remove('active');
+        content.classList.remove('show');
+        return;
+    }
+
+    // Toggle active state
+    header.classList.add('active');
+    content.classList.add('show');
+
+    // If already loaded, don't fetch again
+    if (contentArea.innerHTML.trim() !== '') return;
+
+    // Show loader
+    loader.style.display = 'block';
+
+    try {
+        const response = await fetch('/api/generate_section', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question: question,
+                category: category,
+                subcategory: subcategory,
+                section_id: sectionId
+            })
+        });
+
+        const data = await response.json();
+        if (data.content) {
+            contentArea.innerHTML = data.content;
+        } else {
+            contentArea.innerHTML = '<p class="text-danger">Failed to load content. Please try again.</p>';
+        }
+    } catch (error) {
+        console.error('Error loading section:', error);
+        contentArea.innerHTML = '<p class="text-danger">An error occurred while loading content.</p>';
+    } finally {
+        loader.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

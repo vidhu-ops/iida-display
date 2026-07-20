@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}IIda: Mentor Chats{% endblock %}
+
+{% block content %}
+<div class="bg-black py-5">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-lg-10 mx-auto">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="display-5 fw-bold text-white">All Mentor Chats</h1>
+                    <a href="{{ url_for('mentor') }}" class="btn btn-info">New Chat</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                {% if chats %}
+                    <div class="row g-4">
+                        {% for chat in chats %}
+                        <div class="col-md-6">
+                            <div class="card bg-dark border-info h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title text-info">{{ chat.topic }}</h5>
+                                    <p class="card-text text-muted">
+                                        <small>📍 {{ chat.location }}</small>
+                                    </p>
+                                    {% set message_count = chat.messages | length / 50 | int %}
+                                    <p class="text-white">
+                                        <small>Messages: {{ message_count }}</small>
+                                    </p>
+                                    <p class="text-muted">
+                                        <small>Last updated: {{ chat.updated_at.strftime('%d %b %Y, %H:%M') }}</small>
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-dark border-top d-flex gap-2">
+                                    <a href="{{ url_for('view_mentor_chat', chat_id=chat.id) }}" class="btn btn-sm btn-info flex-grow-1">View Chat</a>
+                                    <button class="btn btn-sm btn-secondary" onclick="downloadChat('{{ chat.topic }}', '{{ chat.location }}', '{{ chat.id }}')">Download</button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="card bg-dark border-info">
+                        <div class="card-body text-center py-5">
+                            <p class="text-muted mb-3">You haven't had any mentor chats yet.</p>
+                            <a href="{{ url_for('mentor') }}" class="btn btn-info">Start a New Chat</a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadChat(topic, location, chatId) {
+    // Fetch the chat and download it
+    fetch(`/mentor-chat/${chatId}`)
+        .then(response => response.text())
+        .then(html => {
+            // Extract messages from HTML (simplified approach)
+            alert('Download feature coming soon!');
+        })
+        .catch(error => {
+            alert('Error downloading chat');
+            console.error('Error:', error);
+        });
+}
+</script>
+{% endblock %}

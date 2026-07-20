@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}IIDATECH - Ready for the Next{% endblock %}
+
+{% block content %}
+<div class="container bg-black my-5">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 fw-bold mb-3">
+                <i class="fas fa-brain text-primary me-3"></i>
+                IIDATECH - READY FOR THE NEXT
+            </h1>
+            <p class="lead text-muted mb-4">
+                Advanced research, business development, business plan, financial analysis and execution platform with live analytics and actionable insights. 
+                Generate busniess plans, ready solutions and tailored business reports and research with real market numbers, strategic recommendations, and implementation roadmaps across any domain.
+            </p>
+            
+            <!-- Status Indicators -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-secondary">
+                        <div class="card-body py-2">
+                            <small class="text-muted">Knowledge Base Status</small>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-database me-2 text-info"></i>
+                                <span class="fw-bold">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-secondary">
+                        <div class="card-body py-2">
+                            <small class="text-muted"> Engine Status</small>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-robot me-2 {% if gemini_status %}text-success{% else %}text-warning{% endif %}"></i>
+                                <span class="fw-bold">{% if gemini_status %}Connected{% else %}Check Config{% endif %}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Required Message -->
+    {% if not current_user.is_authenticated %}
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-lock me-2"></i>
+                <strong>Login Required:</strong> Please 
+                <a href="{{ url_for('login') }}" class="alert-link">login</a> or 
+                <a href="{{ url_for('register') }}" class="alert-link">register</a> to generate research reports.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Credits Information and Cost Breakdown -->
+    {% if current_user.is_authenticated %}
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card bg-dark border-info">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-info mb-3">Your Credits</h6>
+                            <div class="display-6 text-success">{{ current_user.credits }}</div>
+                            <small class="text-muted">Available Credits</small>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-info mb-3">Report Costs</h6>
+                            <ul class="small text-muted mb-0">
+                                <li><i class="fas fa-check-circle text-success"></i> Research Question: 10 credits</li>
+                                <li><i class="fas fa-tag text-warning"></i> Plan: 10 credits</li>
+                                <li><i class="fas fa-sitemap text-warning"></i> business report: 10 credits</li>
+                                <li><i class="fas fa-check-double text-danger"></i> Comprehensive solution: 10 credits</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Research Form -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            {% if not current_user.is_authenticated %}
+                <div class="card bg-black shadow-lg opacity-50">
+                    <div class="card-header bg-black text-white">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-search me-2"></i>
+                            Generate Report
+                        </h4>
+                    </div>
+                    <div class="card-body p-4 text-center">
+                        <p class="text-muted mb-3">Please log in or register to generate reports</p>
+                        <a href="{{ url_for('login') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-success">
+                            <i class="fas fa-user-plus me-2"></i>Register
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+            <div class="card bg-black shadow-lg">
+                <div class="card-header bg-black text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        Generate Research Report
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('generate_report') }}" id="research-form">
+                        <!-- Research Question -->
+                        <div class="mb-4">
+                            <label for="question" class="form-label fw-bold">
+                                <i class="fas fa-question-circle me-2"></i>
+                                Research Question
+                            </label>
+                            <textarea class="form-control" 
+                                      id="question" 
+                                      name="question" 
+                                      rows="3" 
+                                      placeholder="Enter your research question here... (e.g., What are the emerging trends in renewable energy? How does blockchain technology work? What is the impact of AI on healthcare?)"
+                                      required></textarea>
+                            <div class="form-text">
+                                Be specific with your research question, include regions if the research is region specific to get more focused and detailed analysis.
+                            </div>
+                        </div>
+
+                        <!-- Category Selection -->
+                        <div class="mb-4">
+                            <label for="category" class="form-label fw-bold">
+                                <i class="fas fa-tags me-2"></i>
+                                Primary Category
+                            </label>
+                            <select class="form-select" id="category" name="category" onchange="loadSubcategories(this.value)">
+                                <option value="">Select a category (optional)</option>
+                                {% for category in dropdown_options.keys() %}
+                                    <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Subcategory Selection -->
+                        <div class="mb-4">
+                            <label for="subcategory" class="form-label fw-bold">
+                                <i class="fas fa-sitemap me-2"></i>
+                                Focus Area
+                            </label>
+                            <select class="form-select" id="subcategory" name="subcategory" disabled>
+                                <option value="">Select focus area (optional)</option>
+                            </select>
+                            <div class="form-text">
+                                Selecting categories helps focus the analysis on specific aspects of your research question.
+                            </div>
+                        </div>
+
+                        <!-- Include All Comprehensive Analysis Checkbox -->
+                        <div class="mb-4">
+                            <div class="form-check p-3 bg-dark border border-info rounded">
+                                <input class="form-check-input" type="checkbox" id="includeAll" name="include_all" value="true">
+                                <label class="form-check-label fw-bold text-info" for="includeAll">
+                                    <i class="fas fa-check-double me-2"></i>
+                                    Include All Comprehensive Analysis
+                                </label>
+                                <div class="form-text text-muted mt-2">
+                                    <small>
+                                        <strong>Enable for maximum depth:</strong> This will generate the most comprehensive report possible covering all index topics with detailed analytics, real market data, specific solutions, implementation roadmaps, and quantitative insights across every section. Perfect for thorough business intelligence and strategic planning.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="generate-btn">
+                                <i class="fas fa-cogs me-2"></i>
+                                Generate Comprehensive Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Reports Section -->
+    {% if recent_reports %}
+    <div class="row mt-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Recent Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for report in recent_reports %}
+                        <a href="{{ url_for('view_report', report_id=report.id) }}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ report.question[:80] }}{% if report.question|length > 80 %}...{% endif %}</h6>
+                                <small>{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            {% if report.category %}
+                            <p class="mb-1">
+                                <span class="badge bg-secondary">{{ report.category }}</span>
+                                {% if report.subcategory %}
+                                    <span class="badge bg-info">{{ report.subcategory }}</span>
+                                {% endif %}
+                            </p>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('list_reports') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-2"></i>
+                            View All Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Features Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="text-center mb-4">Platform Features</h3>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Live Analytics & Insights</h5>
+                            <p class="card-text">Real market data with quantitative metrics, growth rates, and actionable recommendations with specific numbers.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-database fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">Comprehensive Knowledge</h5>
+                            <p class="card-text">Access to vast knowledge across all domains including technology, business, science, and industry trends.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-lightbulb fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Strategic Recommendations</h5>
+                            <p class="card-text">Actionable suggestions with implementation timelines, ROI projections, and measurable success metrics.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store dropdown options for JavaScript access
+const dropdownOptions = {{ dropdown_options|tojson }};
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dynamic button text based on Include All checkbox
+const includeAllCheckbox = document.getElementById('includeAll');
+const generateBtn = document.getElementById('generate-btn');
+
+function updateButtonText() {
+    if (includeAllCheckbox.checked) {
+        generateBtn.innerHTML = '<i class="fas fa-chart-line me-2"></i>Generate Maximum Comprehensive Report';
+    } else {
+        generateBtn.innerHTML = '<i class="fas fa-cogs me-2"></i>Generate Comprehensive Report';
+    }
+}
+
+includeAllCheckbox.addEventListener('change', updateButtonText);
+
+// Form submission handling
+document.getElementById('research-form').addEventListener('submit', function(e) {
+    const btn = document.getElementById('generate-btn');
+    const isComprehensive = includeAllCheckbox.checked;
+    const loadingText = isComprehensive ? 
+        '<i class="fas fa-spinner fa-spin me-2"></i>Generating Maximum Analysis...' :
+        '<i class="fas fa-spinner fa-spin me-2"></i>Generating Report...';
+    
+    btn.innerHTML = loadingText;
+    btn.disabled = true;
+});
+</script>
+{% endblock %}

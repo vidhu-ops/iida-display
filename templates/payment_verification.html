@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Payment - IDA{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-6 mx-auto text-center">
+            <div class="card bg-dark border-primary">
+                <div class="card-body p-5">
+                    <h2 class="card-title mb-4">
+                        <i class="fas fa-clock text-warning me-2"></i>Payment Pending
+                    </h2>
+                    
+                    <div class="alert alert-info mb-4">
+                        <p class="mb-0"><strong>Order ID:</strong> {{ order_id }}</p>
+                        <p class="mb-0"><strong>Amount:</strong> ₹{{ amount }}</p>
+                        <p class="mb-0"><strong>Credits:</strong> {{ credits }}</p>
+                        <p class="mb-0 mt-2"><strong>Status:</strong> <span class="badge bg-warning">PENDING</span></p>
+                    </div>
+                    
+                    <p class="text-muted mb-4">After completing payment on Cashfree, click the button below to verify and receive your credits.</p>
+                    
+                    <form method="POST" action="{{ url_for('verify_and_complete_payment') }}" class="mb-3">
+                        <input type="hidden" name="order_id" value="{{ order_id }}">
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-check-circle me-2"></i>Verify Payment & Add Credits
+                        </button>
+                    </form>
+                    
+                    <a href="{{ url_for('buy_credits') }}" class="btn btn-secondary btn-lg w-100">
+                        <i class="fas fa-times-circle me-2"></i>Cancel
+                    </a>
+                    
+                    <hr class="my-4">
+                    
+                    <p class="text-muted small mb-2">Click "Verify Payment" after you've completed payment on Cashfree. Your credits will be added immediately upon verification.</p>
+                    <p class="text-muted small">
+                        <a href="{{ url_for('index') }}" class="text-info">← Back to Home</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

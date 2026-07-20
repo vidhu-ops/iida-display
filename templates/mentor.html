@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+
+{% block title %}IIda: Mentor{% endblock %}
+
+{% block content %}
+<div class="bg-black py-5">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-5 fw-bold text-white mb-3">Mentor</h1>
+                <p class="lead text-muted">Get personalized mentorship guidance</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <!-- Setup Form -->
+                <div id="setup-form" class="card bg-dark border-info mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title text-white mb-4">Let's get started</h5>
+                        <form id="mentor-setup" method="POST" action="{{ url_for('mentor') }}">
+                            <div class="mb-3">
+                                <label for="topic" class="form-label text-white">What topic would you like mentorship in?</label>
+                                <input type="text" class="form-control bg-dark border-info text-white" id="topic" name="topic" placeholder="e.g., Business, Programming, Marketing..." required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="location" class="form-label text-white">What's your location?</label>
+                                <input type="text" class="form-control bg-dark border-info text-white" id="location" name="location" placeholder="e.g., New York, Remote..." required>
+                            </div>
+                            {% if current_user.is_authenticated %}
+                            <button type="submit" class="btn btn-info w-100 fw-bold">Start Mentorship</button>
+                            {% else %}
+                            <a href="{{ url_for('login', next=url_for('mentor')) }}" class="btn btn-info w-100 fw-bold">Start Mentorship</a>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Chat Container -->
+                <div id="chat-container" class="card bg-dark border-info" style="display: none;">
+                    <div class="card-header bg-dark border-bottom">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div class="text-white">
+                                <h6 class="mb-1">Mentor Chat</h6>
+                                <small class="text-muted" id="mentor-info"></small>
+                                <small class="text-warning d-block" id="message-counter"></small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-info" id="reset-btn">Reset</button>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{{ url_for('analyse') }}" class="btn btn-sm btn-outline-info">Get Real Research Report</a>
+                            <a href="{{ url_for('analyse') }}" class="btn btn-sm btn-outline-info">Get Execution Plan</a>
+                            <a href="{{ url_for('analyse') }}" class="btn btn-sm btn-outline-info">Get Business Plan</a>
+                        </div>
+                        {% if current_user.is_authenticated %}
+                        <div class="d-flex gap-2 flex-wrap mt-3">
+                            <a href="{{ url_for('mentor_my_chat') }}" class="btn btn-sm btn-info" title="View your saved chat">My Chat</a>
+                            <button class="btn btn-sm btn-success" id="save-btn" title="Save chat">Save Chat</button>
+                            <button class="btn btn-sm btn-secondary" id="download-btn" title="Download as text">Download</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-3" style="height: 500px; overflow-y: auto; display: flex; flex-direction: column;">
+                        <div id="chat-messages" style="flex: 1; overflow-y: auto; margin-bottom: 15px;"></div>
+                    </div>
+                    <div class="card-footer bg-dark border-top">
+                        <form id="chat-form" method="POST" action="{{ url_for('mentor_chat') }}">
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-dark border-info text-white" id="message-input" name="message" placeholder="Ask your mentor..." required>
+                                <button class="btn btn-info fw-bold" type="submit" id="send-btn">Send</button>
+                            </div>
+                            {% if current_user.is_authenticated %}
+                            <small class="text-info d-block mt-2" id="credits-info"></small>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Signup Modal -->
+<div class="modal fade" id="signupModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content bg-dark border-info">
+            <div class="modal-header border-info">
+                <h5 class="modal-title text-white">Continue Your Mentorship</h5>
+            </div>
+            <div class="modal-body text-white">
+                <p>You've reached the free message limit (8 messages). Sign up to get:</p>
+                <ul class="text-info">
+                    <li>Unlimited mentor messages</li>
+                    <li>Save all your chats</li>
+                    <li>Download chat history</li>
+                    <li>Keep your current mentor history after signup</li>
+                </ul>
+            </div>
+            <div class="modal-footer border-info">
+                <a href="#" onclick="registerWithChats(); return false;" class="btn btn-info">Sign Up</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-info">Sign In</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Credits Modal -->
+<div class="modal fade" id="creditsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content bg-dark border-info">
+            <div class="modal-header border-info">
+                <h5 class="modal-title text-white">Credits Needed</h5>
+            </div>
+            <div class="modal-body text-white">
+                <p>You need <strong>3 credits</strong> to continue this mentorship session.</p>
+                <p>Current credits: <span id="current-credits" class="text-warning">0</span></p>
+            </div>
+            <div class="modal-footer border-info">
+                <a href="{{ url_for('buy_credits') }}" class="btn btn-warning">Buy Credits</a>
+                <button type="button" class="btn btn-outline-info" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #chat-messages {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .message {
+        padding: 12px 15px;
+        border-radius: 8px;
+        word-wrap: break-word;
+        max-width: 90%;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    .user-message {
+        background: #0d6efd;
+        color: white;
+        margin-left: auto;
+        text-align: right;
+    }
+
+    .mentor-message {
+        background: #495057;
+        color: white;
+        margin-right: auto;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .loading {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: white;
+        animation: pulse 1.5s infinite;
+        margin-right: 5px;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const setupForm = document.getElementById('setup-form');
+    const chatContainer = document.getElementById('chat-container');
+    const mentorSetup = document.getElementById('mentor-setup');
+    const chatForm = document.getElementById('chat-form');
+    const resetBtn = document.getElementById('reset-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const downloadBtn = document.getElementById('download-btn');
+    const messageInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+    const chatMessages = document.getElementById('chat-messages');
+    const mentorInfo = document.getElementById('mentor-info');
+    const messageCounter = document.getElementById('message-counter');
+    const creditsInfo = document.getElementById('credits-info');
+    const signupModal = new bootstrap.Modal(document.getElementById('signupModal'), {backdrop: 'static', keyboard: false});
+    const creditsModal = new bootstrap.Modal(document.getElementById('creditsModal'), {backdrop: 'static', keyboard: false});
+
+    const isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
+    const currentCredits = {{ current_user.credits if current_user.is_authenticated else 0 }};
+
+    let topic = null;
+    let location = null;
+    let messageCount = 0;
+
+    localStorage.removeItem('mentor-topic');
+    localStorage.removeItem('mentor-location');
+    localStorage.removeItem('chat-history');
+    localStorage.removeItem('temp-mentor-chats');
+
+    if (isAuthenticated) {
+        topic = localStorage.getItem('mentor-topic');
+        location = localStorage.getItem('mentor-location');
+    }
+
+    // Show chat only for authenticated users after they start a session
+    if (topic && location && isAuthenticated) {
+        setupForm.style.display = 'none';
+        chatContainer.style.display = 'block';
+        mentorInfo.textContent = `Topic: ${topic} • Location: ${location}`;
+        loadChatHistory();
+        updateMessageCounter();
+    } else if (!isAuthenticated) {
+        setupForm.style.display = 'block';
+        chatContainer.style.display = 'none';
+    }
+
+    // Setup form submission
+    mentorSetup.addEventListener('submit', function(e) {
+        e.preventDefault();
+        topic = document.getElementById('topic').value;
+        location = document.getElementById('location').value;
+
+        localStorage.setItem('mentor-topic', topic);
+        localStorage.setItem('mentor-location', location);
+
+        if (!isAuthenticated) {
+            setupForm.style.display = 'block';
+            chatContainer.style.display = 'none';
+            return;
+        }
+
+        setupForm.style.display = 'none';
+        chatContainer.style.display = 'block';
+        mentorInfo.textContent = `Topic: ${topic} • Location: ${location}`;
+        chatMessages.innerHTML = '';
+        localStorage.removeItem('chat-history');
+        messageCount = 0;
+        updateMessageCounter();
+    });
+
+    // Chat form submission
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = messageInput.value.trim();
+
+        if (!message) return;
+
+        // Add user message to chat
+        addMessage(message, 'user');
+        messageInput.value = '';
+        sendBtn.disabled = true;
+        messageCount += 1;
+        updateMessageCounter();
+
+        // Show loading indicator
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'mentor-message';
+        loadingDiv.innerHTML = '<span class="loading"></span><span class="loading"></span><span class="loading"></span>';
+        chatMessages.appendChild(loadingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Send to server
+        fetch('{{ url_for("mentor_chat") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message,
+                topic: topic,
+                location: location,
+                message_count: messageCount
+            })
+        })
+        .then(response => {
+            if (response.status === 403 && !isAuthenticated) {
+                // Signup required
+                signupModal.show();
+                loadingDiv.remove();
+                sendBtn.disabled = false;
+                messageInput.focus();
+                messageCount -= 1;
+                updateMessageCounter();
+                return null;
+            } else if (response.status === 402) {
+                // Credits needed
+                document.getElementById('current-credits').textContent = currentCredits;
+                creditsModal.show();
+                loadingDiv.remove();
+                sendBtn.disabled = false;
+                messageInput.focus();
+                messageCount -= 1;
+                updateMessageCounter();
+                return null;
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data) return;
+            
+            loadingDiv.remove();
+            if (data.response) {
+                addMessage(data.response, 'mentor');
+                messageCount += 1;
+                saveChatHistory();
+                updateMessageCounter();
+                
+                // Update credits if response includes them
+                if (data.credits_remaining !== null && data.credits_remaining !== undefined) {
+                    if (creditsInfo) {
+                        creditsInfo.textContent = `Credits remaining: ${data.credits_remaining}`;
+                    }
+                }
+            } else if (data.error) {
+                addMessage('Error: ' + data.message, 'mentor');
+                messageCount -= 1;
+            }
+            sendBtn.disabled = false;
+            messageInput.focus();
+        })
+        .catch(error => {
+            loadingDiv.remove();
+            addMessage('Error communicating with mentor. Please try again.', 'mentor');
+            sendBtn.disabled = false;
+            messageCount -= 1;
+            updateMessageCounter();
+            console.error('Error:', error);
+        });
+    });
+
+    // Reset button
+    resetBtn.addEventListener('click', function() {
+        if (confirm('Reset mentorship session? You will need to select a new topic and location.')) {
+            localStorage.removeItem('mentor-topic');
+            localStorage.removeItem('mentor-location');
+            localStorage.removeItem('chat-history');
+            setupForm.style.display = 'block';
+            chatContainer.style.display = 'none';
+            chatMessages.innerHTML = '';
+            document.getElementById('topic').value = '';
+            document.getElementById('location').value = '';
+            messageCount = 0;
+            updateMessageCounter();
+        }
+    });
+
+    // Save button
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            fetch('{{ url_for("mentor_save_chat") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    topic: topic,
+                    location: location
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Chat saved successfully!');
+                } else {
+                    alert('Error saving chat: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error saving chat');
+                console.error('Error:', error);
+            });
+        });
+    }
+
+    // Download button
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+            const history = localStorage.getItem('chat-history');
+            fetch('{{ url_for("mentor_download_chat") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    topic: topic,
+                    location: location,
+                    messages: history || '[]'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.content) {
+                    const element = document.createElement('a');
+                    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data.content));
+                    element.setAttribute('download', data.filename);
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                } else {
+                    alert('Error downloading chat');
+                }
+            })
+            .catch(error => {
+                alert('Error downloading chat');
+                console.error('Error:', error);
+            });
+        });
+    }
+
+    function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = sender === 'user' ? 'message user-message' : 'message mentor-message';
+        messageDiv.textContent = text;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function saveChatHistory() {
+        const messages = [];
+        document.querySelectorAll('.message').forEach(msg => {
+            messages.push({
+                text: msg.textContent,
+                sender: msg.classList.contains('user-message') ? 'user' : 'mentor'
+            });
+        });
+        localStorage.setItem('chat-history', JSON.stringify(messages));
+    }
+
+    function loadChatHistory() {
+        const history = localStorage.getItem('chat-history');
+        if (history) {
+            const messages = JSON.parse(history);
+            messageCount = messages.length;
+            messages.forEach(msg => {
+                addMessage(msg.text, msg.sender);
+            });
+        }
+    }
+
+    function updateMessageCounter() {
+        if (isAuthenticated) {
+            messageCounter.textContent = `Messages: ${messageCount} (Unlimited - ${currentCredits} credits)`;
+        } else {
+            messageCounter.textContent = `Messages: ${messageCount}/8 (Free limit)`;
+        }
+    }
+
+    // Register with temporary chats
+    window.registerWithChats = function() {
+        // Save current chat to temporary storage
+        const currentChat = {
+            topic: topic,
+            location: location,
+            messages: document.querySelectorAll('.message').length > 0 ? 
+                Array.from(document.querySelectorAll('.message')).map(msg => ({
+                    sender: msg.classList.contains('user-message') ? 'user' : 'mentor',
+                    text: msg.textContent
+                })) : []
+        };
+        
+        // Get all temporary chats from localStorage
+        let tempChats = JSON.parse(localStorage.getItem('temp-mentor-chats') || '[]');
+        
+        // Add current chat if it has messages
+        if (currentChat.messages.length > 0) {
+            tempChats.push(currentChat);
+        }
+        
+        // Store in session storage for registration page
+        sessionStorage.setItem('temp-mentor-chats', JSON.stringify(tempChats));
+        
+        // Redirect to register
+        window.location.href = '{{ url_for("register") }}';
+    }
+});
+</script>
+{% endblock %}

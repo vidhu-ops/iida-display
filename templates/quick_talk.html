@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}IIda: Quick Talk - Problem Solver{% endblock %}
+
+{% block content %}
+<div id="root"></div>
+
+<!-- React & Babel from CDN -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+{% raw %}
+<script type="text/babel">
+  const { useState, useRef, useEffect } = React;
+
+  const API_KEY = "{{ api_key }}";
+
+  const EXAMPLES = [
+    "I need an affordable doctor for knee pain near me",
+    "My small business has no customers",
+    "I want to learn programming from scratch",
+    "I cannot manage my monthly debt",
+    "I need better sleep and nothing works",
+  ];
+
+  async function callClaude(messages, maxTokens = 2000) {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: maxTokens,
+        messages,
+      }),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`API ${res.status}: ${errText}`);
+    }
+    const data = await res.json();
+    return data.content[0].text;
+  }
+
+  function QuickTalk() {
+    const [dark, setDark] = useState(true);
+    const [stage, setStage] = useState("problem");
+    const [problem, setProblem] = useState("");
+    const [questions, setQuestions] = useState([]);
+    const [answers, setAnswers] = useState({});
+    const [currentQ, setCurrentQ] = useState(0);
+    const [answer, setAnswer] = useState("");
+    const [solution, setSolution] = useState("");
+    const [displayed, setDisplayed] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const inputRef = useRef(null);
+    const solRef = useRef(null);
+
+    // theme tokens
+    const t = {
+      bg:          dark ? "#08080f" : "#f5f5f0",
+      surface:     dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)",
+      border:      dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)",
+      borderAccent:dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.15)",
+      text:        dark ? "#f1f5f9" : "#111118",
+      textSub:     dark ? "#6b7280" : "#555566",
+      textMuted:   dark ? "#374151" : "#999aaa",
+      accent:      "#f59e0b",
+      accentHov:   "#d97706",
+      pillBg:      dark ? "rgba(245,158,11,0.06)" : "rgba(245,158,11,0.08)",
+      pillBorder:  dark ? "rgba(245,158,11,0.15)" : "rgba(245,158,11,0.3)",
+      dotInactive: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
+      solText:     dark ? "#c4cad4" : "#2a2a35",
+      errBg:       dark ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.06)",
+      errBorder:   dark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.3)",
+      chipBg:      dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.04)",
+      chipBorder:  dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
+      btnDisBg:    dark ? "#1c1c2e" : "#e0e0e8",
+      btnDisText:  dark ? "#4b5563" : "#aaaabd",
+      resetColor:  dark ? "#4b5563" : "#888899",
+      scrollThumb: dark ? "#333" : "#ccc",
+    };
+
+    useEffect(() => {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }, [stage, currentQ]);
+
+    useEffect(() => {
+      if (!solution) return;
+      setDisplayed("");
+      let i = 0;
+      const iv = setInterval(() => {
+        if (i <= solution.length) { setDisplayed(solution.slice(0, i)); i += 4; }
+        else { clearInterval(iv); setDisplayed(solution); }
+      }, 10);
+      return () => clearInterval(iv);
+    }, [solution]);
+
+    useEffect(() => {
+      if (solRef.current) solRef.current.scrollTop = solRef.current.scrollHeight;
+    }, [displayed]);
+
+    function reset() {
+      setStage("problem"); setProblem(""); setQuestions([]);
+      setAnswers({}); setCurrentQ(0); setAnswer("");
+      setSolution(""); setDisplayed(""); setError("");
+    }
+
+    async function submitProblem() {
+      if (problem.trim().length < 5) { setError("Please describe your problem in more detail."); return; }
+      setError(""); setLoading(true);
+      try {
+        const text = await callClaude([{
+          role: "user",
+          content: `You are a problem-solving assistant. User problem: "${problem}"\n\nGenerate exactly 5 relevant follow-up questions. You MUST include:\n- One question about their city or location\n- One question about their available budget\n\nOther questions must be highly specific to this exact problem.\n\nRespond ONLY with valid JSON, no markdown, no backticks:\n{"questions":["q1","q2","q3","q4","q5"]}`
+        }], 800);
+        const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+        setQuestions(parsed.questions);
+        setCurrentQ(0); setAnswers({});
+        setStage("questions");
+      } catch (e) { setError(e.message); }
+      setLoading(false);
+    }
+
+    function submitAnswer() {
+      if (!answer.trim()) return;
+      const updated = { ...answers, [currentQ]: answer.trim() };
+      setAnswers(updated); setAnswer("");
+      if (currentQ < questions.length - 1) { setCurrentQ(q => q + 1); }
+      else { startSolving(updated); }
+    }
+
+    function skipAnswer() {
+      const updated = { ...answers, [currentQ]: "Not specified" };
+      setAnswers(updated); setAnswer("");
+      if (currentQ < questions.length - 1) { setCurrentQ(q => q + 1); }
+      else { startSolving(updated); }
+    }
+
+    async function startSolving(finalAnswers) {
+      setStage("solving"); setLoading(true);
+      const qa = questions.map((q, i) => `Q: ${q}\nA: ${finalAnswers[i] || "Not specified"}`).join("\n\n");
+      try {
+        const text = await callClaude([{
+          role: "user",
+          content: `Problem: "${problem}"\n\nContext:\n${qa}\n\nBased on their exact location and budget, provide 3-4 HIGHLY SPECIFIC, ACTIONABLE solutions. For each solution:\n- Start with an emoji and a title\n- 2-3 sentences of clear explanation\n- Name specific local services, apps, or platforms relevant to their city\n- Give real cost estimates relative to their stated budget\n- End with "Quick Start:" — the single first action to take today\n\nBe a knowledgeable local advisor. Be specific, never generic. Write every solution fully and completely — do not cut off or abbreviate.`
+        }], 2000);
+        setSolution(text); setStage("solution");
+      } catch (e) { setError(e.message); setStage("questions"); }
+      setLoading(false);
+    }
+
+    const modeBtn = (
+      <button
+        onClick={() => setDark(d => !d)}
+        title={dark ? "Switch to light mode" : "Switch to dark mode"}
+        style={{
+          position: "fixed", top: 18, right: 20, zIndex: 100,
+          width: 40, height: 22, borderRadius: 99,
+          background: dark ? "#f59e0b" : "#d1d5db",
+          border: "none", cursor: "pointer", padding: 0,
+          transition: "background 0.25s",
+          display: "flex", alignItems: "center",
+        }}
+      >
+        <div style={{
+          width: 16, height: 16, borderRadius: "50%",
+          background: "#fff",
+          margin: dark ? "0 2px 0 auto" : "0 auto 0 2px",
+          transition: "margin 0.25s",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 9, lineHeight: 1,
+        }}>
+          {dark ? "🌙" : "☀️"}
+        </div>
+      </button>
+    );
+
+    const inputStyle = {
+      width: "100%", background: "transparent", border: "none",
+      color: t.text, fontSize: 14, fontFamily: "inherit",
+      outline: "none", resize: "none", lineHeight: 1.75,
+    };
+
+    const errBox = error ? (
+      <div style={{ background: t.errBg, border: `1px solid ${t.errBorder}`, color: "#f87171", borderRadius: 8, padding: "9px 13px", fontSize: 11, marginBottom: 12, lineHeight: 1.6 }}>
+        {error}
+      </div>
+    ) : null;
+
+    return (
+      <div style={{ minHeight: "100vh", background: t.bg, fontFamily: "'Segoe UI', system-ui, sans-serif", color: t.text, transition: "background 0.25s, color 0.25s" }}>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+          .fu { animation: fadeUp 0.4s ease forwards; }
+          .chip:hover { border-color: #f59e0b !important; color: #f59e0b !important; }
+          .btn-go:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+          ::-webkit-scrollbar { width: 4px; }
+          ::-webkit-scrollbar-thumb { background: ${t.scrollThumb}; border-radius: 2px; }
+        `}</style>
+
+        {modeBtn}
+
+        <div style={{ maxWidth: 660, margin: "0 auto", padding: "52px 24px 80px" }}>
+
+          {/* ── PROBLEM ── */}
+          {stage === "problem" && (
+            <div className="fu">
+              <div style={{ fontSize: 9, color: t.accent, letterSpacing: "0.25em", marginBottom: 12 }}>// INITIALIZE</div>
+              <h1 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, lineHeight: 1.1, color: t.text, marginBottom: 12 }}>
+                What problem<br />needs solving?
+              </h1>
+              <p style={{ fontSize: 13, color: t.textSub, lineHeight: 1.75, marginBottom: 28 }}>
+                Describe your problem. Quick Talk asks smart questions about your location and budget, then builds a personalised action plan instantly.
+              </p>
+              <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", marginBottom: 12 }}>
+                <div style={{ fontSize: 9, color: t.accent, letterSpacing: "0.2em", marginBottom: 8 }}>YOUR PROBLEM</div>
+                <textarea
+                  ref={inputRef}
+                  value={problem}
+                  onChange={e => setProblem(e.target.value)}
+                  onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") submitProblem(); }}
+                  placeholder="e.g. I need affordable housing near my office, my business has no customers, I have chronic back pain..."
+                  rows={4}
+                  style={{ ...inputStyle, resize: "none" }}
+                />
+              </div>
+              {errBox}
+              <button
+                className="btn-go"
+                onClick={submitProblem}
+                disabled={loading || problem.trim().length < 5}
+                style={{
+                  background: loading || problem.trim().length < 5 ? t.btnDisBg : t.accent,
+                  color: loading || problem.trim().length < 5 ? t.btnDisText : "#111",
+                  border: "none", padding: "11px 24px", borderRadius: 9,
+                  fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
+                  cursor: loading || problem.trim().length < 5 ? "not-allowed" : "pointer",
+                  fontFamily: "inherit", transition: "all 0.15s",
+                }}
+              >
+                {loading ? "ANALYSING..." : "ANALYSE & CONTINUE →"}
+              </button>
+              <div style={{ marginTop: 8, fontSize: 10, color: t.textMuted }}>Ctrl + Enter to submit</div>
+              <div style={{ marginTop: 32 }}>
+                <div style={{ fontSize: 9, color: t.textMuted, letterSpacing: "0.2em", marginBottom: 10 }}>TRY AN EXAMPLE</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                  {EXAMPLES.map(ex => (
+                    <button key={ex} className="chip" onClick={() => setProblem(ex)}
+                      style={{ background: t.chipBg, border: `1px solid ${t.chipBorder}`, color: t.textSub, padding: "6px 11px", borderRadius: 7, fontSize: 11, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── QUESTIONS ── */}
+          {stage === "questions" && (
+            <div className="fu">
+              <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+                {questions.map((_, idx) => (
+                  <div key={idx} style={{ flex: 1, height: 2, borderRadius: 99, transition: "all 0.4s", background: idx < currentQ ? t.accent : idx === currentQ ? "rgba(245,158,11,0.3)" : t.dotInactive }} />
+                ))}
+              </div>
+              <div style={{ fontSize: 9, color: t.textMuted, letterSpacing: "0.2em", marginBottom: 18 }}>QUESTION {currentQ + 1} OF {questions.length}</div>
+
+              <div style={{ background: t.pillBg, border: `1px solid ${t.pillBorder}`, borderRadius: 9, padding: "9px 14px", marginBottom: 24 }}>
+                <div style={{ fontSize: 9, color: t.accent, letterSpacing: "0.2em", marginBottom: 3 }}>PROBLEM</div>
+                <div style={{ fontSize: 12, color: t.textSub, lineHeight: 1.5 }}>{problem.slice(0, 110)}{problem.length > 110 ? "..." : ""}</div>
+              </div>
+
+              <div style={{ fontSize: "clamp(16px,2.5vw,22px)", fontWeight: 600, color: t.text, marginBottom: 22, lineHeight: 1.35 }}>{questions[currentQ]}</div>
+
+              {currentQ > 0 && (
+                <div style={{ marginBottom: 18 }}>
+                  {questions.slice(0, currentQ).map((q, i) => (
+                    <div key={i} style={{ display: "flex", gap: 8, padding: "7px 0", borderBottom: `1px solid ${t.border}` }}>
+                      <span style={{ color: "#22c55e", fontSize: 10, marginTop: 2, flexShrink: 0 }}>✓</span>
+                      <div>
+                        <div style={{ fontSize: 10, color: t.textMuted, marginBottom: 2 }}>{q}</div>
+                        <div style={{ fontSize: 12, color: t.textSub }}>{answers[i] || "Not specified"}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderLeft: `2px solid ${t.accent}`, borderRadius: 9, padding: "12px 16px", marginBottom: 12 }}>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={answer}
+                  onChange={e => setAnswer(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") submitAnswer(); }}
+                  placeholder="Type your answer..."
+                  autoComplete="off"
+                  style={inputStyle}
+                />
+              </div>
+              {errBox}
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <button className="btn-go" onClick={submitAnswer}
+                  style={{ background: answer.trim() ? t.accent : t.btnDisBg, color: answer.trim() ? "#111" : t.btnDisText, border: "none", padding: "11px 22px", borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: answer.trim() ? "pointer" : "not-allowed", letterSpacing: "0.08em", fontFamily: "inherit", transition: "all 0.15s" }}>
+                  {currentQ < questions.length - 1 ? "NEXT →" : "GENERATE SOLUTIONS ⚡"}
+                </button>
+                <button onClick={skipAnswer} style={{ background: "transparent", border: "none", color: t.textMuted, fontSize: 10, cursor: "pointer", letterSpacing: "0.1em", fontFamily: "inherit" }}>SKIP</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── SOLVING ── */}
+          {stage === "solving" && (
+            <div className="fu" style={{ textAlign: "center", padding: "80px 0" }}>
+              <div style={{ width: 50, height: 50, border: `2px solid ${t.border}`, borderTop: `2px solid ${t.accent}`, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 22px" }} />
+              <div style={{ fontSize: 20, fontWeight: 700, color: t.text, marginBottom: 10 }}>Building Your Plan</div>
+              <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.9 }}>
+                Analysing your location and budget...<br />
+                Finding local resources...<br />
+                Crafting your personalised action plan...
+              </div>
+            </div>
+          )}
+
+          {/* ── SOLUTION ── */}
+          {stage === "solution" && (
+            <div className="fu">
+              <div style={{ fontSize: 9, color: t.accent, letterSpacing: "0.25em", marginBottom: 12 }}>// SOLUTIONS READY</div>
+              <h1 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 700, lineHeight: 1.1, color: t.text, marginBottom: 10 }}>
+                Your personalised<br />action plan.
+              </h1>
+              <p style={{ fontSize: 13, color: t.textSub, lineHeight: 1.75, marginBottom: 20 }}>Tailored to your location, budget, and situation.</p>
+
+              <div ref={solRef} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 24, lineHeight: 1.95, fontSize: 14, color: t.solText, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 540, overflowY: "auto", marginBottom: 24 }}>
+                {displayed}
+                {displayed.length < solution.length && (
+                  <span style={{ display: "inline-block", width: 2, height: 14, background: t.accent, marginLeft: 2, animation: "blink 0.7s infinite", verticalAlign: "middle" }} />
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button onClick={() => navigator.clipboard.writeText(solution)}
+                  style={{ background: "transparent", border: `1px solid ${t.borderAccent}`, color: t.textSub, padding: "11px 18px", borderRadius: 9, fontSize: 11, cursor: "pointer", letterSpacing: "0.08em", fontFamily: "inherit", transition: "all 0.15s" }}>
+                  COPY
+                </button>
+                <button onClick={reset}
+                  style={{ background: "transparent", border: `1px solid ${t.border}`, color: t.resetColor, padding: "11px 18px", borderRadius: 9, fontSize: 11, cursor: "pointer", letterSpacing: "0.08em", fontFamily: "inherit", transition: "all 0.15s" }}>
+                  ↩ RESET
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    );
+  }
+
+  // Render the component
+  ReactDOM.createRoot(document.getElementById('root')).render(<QuickTalk />);
+</script>
+{% endraw %}
+
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  #root {
+    min-height: 100vh;
+  }
+</style>
+{% endblock %}

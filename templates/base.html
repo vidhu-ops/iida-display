@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IIda - Intelligent Data Analytics{% endblock %}</title>
+    <meta name="description" content="IIda - Transform your ideas into reality with intelligent data analytics, business planning, and execution solutions.">
+    
+    <!-- Bootstrap CSS with Replit theme -->
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo.png') }}">
+    <meta name="theme-color" content="#1d1e20">
+    
+    <style>
+        /* Global button styles with fully rounded corners - override ALL bootstrap defaults */
+        button, .btn, a.btn, input[type="submit"], input[type="button"], .btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-warning, .btn-info, .btn-light, .btn-dark, .btn-link {
+            border-radius: 24px !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        /* Ensure rounded corners on all button states */
+        button:hover, button:active, button:focus,
+        .btn:hover, .btn:active, .btn:focus,
+        a.btn:hover, a.btn:active, a.btn:focus,
+        input[type="submit"]:hover, input[type="submit"]:active, input[type="submit"]:focus,
+        input[type="button"]:hover, input[type="button"]:active, input[type="button"]:focus,
+        .btn-primary:hover, .btn-primary:active, .btn-primary:focus,
+        .btn-secondary:hover, .btn-secondary:active, .btn-secondary:focus,
+        .btn-success:hover, .btn-success:active, .btn-success:focus,
+        .btn-danger:hover, .btn-danger:active, .btn-danger:focus,
+        .btn-warning:hover, .btn-warning:active, .btn-warning:focus,
+        .btn-info:hover, .btn-info:active, .btn-info:focus {
+            border-radius: 24px !important;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* Mobile-friendly navbar */
+        .navbar {
+            padding: 0.5rem 1rem;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            z-index: 1050;
+        }
+        
+        /* Mobile - PWA banner on top */
+        @media (max-width: 991px) {
+            body {
+                padding-top: 75px;
+            }
+            
+            .navbar {
+                margin-top: 0;
+            }
+        }
+
+        /* Desktop navbar - increased height with proper centering */
+        @media (min-width: 992px) {
+            .navbar {
+                min-height: 60px;
+                padding: 0.75rem 1rem;
+            }
+            
+            .navbar-nav {
+                align-items: center !important;
+            }
+            
+            .nav-link {
+                padding: 0.6rem 0.8rem !important;
+            }
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0 !important;
+            margin-right: 2rem;
+        }
+
+        .navbar-brand img {
+            height: 36px !important;
+            width: 36px !important;
+            margin-right: 10px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .navbar-brand strong {
+            font-size: 1.15rem;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        .navbar-nav {
+            gap: 2px;
+        }
+
+        .nav-link {
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .nav-link i {
+            font-size: 1rem;
+            margin-bottom: 0 !important;
+            margin-right: 4px !important;
+        }
+        
+        /* Desktop - horizontal layout */
+        @media (min-width: 992px) {
+            .nav-link {
+                flex-direction: row;
+                padding: 0.6rem 0.8rem !important;
+                font-size: 0.95rem;
+            }
+        }
+        
+        /* Mobile - vertical layout with icons only */
+        @media (max-width: 991px) {
+            .nav-link {
+                flex-direction: column;
+                padding: 0.4rem 0.6rem !important;
+                font-size: 0.75rem;
+            }
+            
+            .nav-link i {
+                margin-right: 0 !important;
+                margin-bottom: 1px;
+            }
+        }
+
+        .nav-link:hover {
+            color: #fd7e14 !important;
+        }
+
+        .navbar-toggler {
+            padding: 0.2rem 0.4rem;
+            border: none;
+            flex-shrink: 0;
+        }
+
+        /* Desktop navbar adjustments for smaller desktop screens */
+        @media (min-width: 992px) and (max-width: 1200px) {
+            .navbar-brand {
+                max-width: 150px;
+            }
+            .nav-link {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.4rem !important;
+            }
+            .execute-btn {
+                padding: 4px 8px !important;
+            }
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: none;
+            outline: 1px solid rgba(222, 255, 255, 0.25);
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        /* Desktop navbar */
+        @media (min-width: 72px) {
+            .navbar-collapse {
+                display: flex !important;
+            }
+        }
+
+        /* Mobile navbar */
+        @media (max-width: 991px) {
+            .navbar {
+                padding: 0.25rem 0.5rem;
+                flex-wrap: nowrap;
+            }
+
+            .navbar-brand {
+                font-size: 0.8rem;
+                max-width: 60%;
+                margin-right: auto;
+            }
+
+            .navbar-collapse {
+                background: rgba(10, 10, 10, 0.98);
+                padding: 1rem;
+                margin-top: 0;
+                border-radius: 0 0 12px 12px;
+                width: 100%;
+                position: fixed;
+                top: 56px;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+                max-height: calc(100vh - 56px);
+                overflow-y: auto;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .nav-link {
+                flex-direction: row;
+                align-items: center;
+                text-align: left;
+                padding: 0.8rem 1rem !important;
+                font-size: 0.9rem;
+            }
+
+            .nav-link i {
+                margin-right: 12px !important;
+                margin-bottom: 0;
+                width: 20px;
+                text-align: center;
+            }
+
+            .navbar-collapse:not(.show) {
+                display: none !important;
+            }
+
+            .navbar-nav {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .nav-item {
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .nav-item:last-child {
+                border-bottom: none;
+            }
+
+            .nav-link {
+                padding: 0.75rem 1rem !important;
+                display: block;
+            }
+
+            .dropdown-menu {
+                background: rgba(30, 30, 30, 0.95) !important;
+                left: auto !important;
+            }
+        }
+
+        .execute-btn {
+            background: linear-gradient(135deg, #00c853 0%, #00b74a 100%) !important;
+            padding: 8px 16px !important;
+            border-radius: 24px !important;
+            color: white !important;
+            border: none !important;
+            white-space: nowrap;
+        }
+        
+        .execute-btn:hover {
+            background: linear-gradient(135deg, #00b74a 0%, #009640 100%) !important;
+            color: white !important;
+            text-decoration: none;
+        }
+
+        @media (max-width: 575px) {
+            .execute-btn {
+                width: 100%;
+                text-align: left;
+                padding: 0.75rem 1rem !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="pwa-install-banner" style="display: flex !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 1049 !important; background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%) !important; height: 48px; overflow: hidden; align-items: center; gap: 6px; flex-wrap: nowrap; padding: 0 8px;">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="height: 28px; width: 28px; border-radius: 4px; flex-shrink: 0; min-width: 28px;">
+        <span class="fw-bold text-white" style="font-size: 0.75rem; white-space: nowrap; flex-shrink: 0; min-width: 0;">IIDA App</span>
+        <button id="pwa-install-btn" style="background: #0d6efd; color: white; border: none; border-radius: 20px; padding: 4px 12px; font-size: 0.7rem; white-space: nowrap; flex-shrink: 0; min-width: 0; cursor: pointer; font-weight: bold;">Install</button>
+        <button id="pwa-close-banner" style="background: none; border: none; color: white; font-size: 20px; opacity: 0.8; flex-shrink: 0; padding: 4px 6px; cursor: pointer; margin-left: auto; line-height: 1;">×</button>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom">
+        <div class="container-fluid">
+            <a class="navbar-brand text-decoration-none" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="border-radius: 50%;">
+                <strong>IIda</strong>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="me-2 small text-uppercase fw-bold" style="font-size: 0.7rem; vertical-align: middle;">Tools Menu</span>
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('analyse') }}">
+                            <i class="fas fa-brain me-1"></i>Analyse-Plan-Solution Tools 
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('analysis_reports') }}">
+                            <i class="fas fa-newspaper me-1"></i>Analysis Reports
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('financial_tools') }}">
+                            <i class="fas fa-chart-line me-1"></i>Financial Tools
+                        </a>
+                    </li>
+                    
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link text-warning" href="{{ url_for('buy_credits') }}">
+                            <i class="fas fa-shopping-cart me-1"></i>Buy Credits
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <button class="nav-link btn btn-link border-0 w-100 h-100" onclick="window.IDA.triggerInstall()">
+                            <i class="fas fa-download me-1"></i>Install App
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link execute-btn" href="{{ url_for('execute_page') }}">
+                            <i class="fas fa-rocket me-1"></i>Execute with us
+                        </a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <span class="nav-link text-info">
+                                <i class="fas fa-coins me-1"></i>
+                                Credits: <strong>{{ current_user.credits }}</strong>
+                            </span>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>{{ current_user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                                <li><h6 class="dropdown-header">{{ current_user.email }}</h6></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-success" href="{{ url_for('register') }}">
+                                <i class="fas fa-user-plus me-1"></i>Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black border-top mt-5 py-4">
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="text-light">IIDATECH - Ready for the next</h6>
+                    <p class="text-muted small">Advanced research, business development,  business plans, execution and management for your region and domain </p>
+                </div>
+                <div class="col-md-6 d-flex align-items-center justify-content-between">
+                    <p class="text-muted small mb-0">
+                        Powered by information <i class="fas fa-robot"></i> 
+                        Built for ease 
+                    </p>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('figma_workspace') }}" class="btn btn-sm btn-primary" style="white-space: nowrap;">
+                        <i class="fas fa-pencil-ruler me-1"></i>Analyse
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chatbot Floating Button and Window -->
+    <div id="ida-chatbot-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 10000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <!-- Floating Button -->
+        <button id="ida-chat-toggle" class="btn btn-primary rounded-circle shadow-lg" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border: none; transition: transform 0.3s ease;">
+            <i class="fas fa-comment-dots" style="font-size: 1.5rem;"></i>
+        </button>
+
+        <!-- Chat Window (hidden by default) -->
+        <div id="ida-chat-window" class="card shadow-lg" style="position: absolute; bottom: 80px; right: 0; width: 350px; height: 500px; display: none; flex-direction: column; overflow: hidden; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); background: #1a1a1a;">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center" style="padding: 15px;">
+                <h6 class="mb-0"><i class="fas fa-robot me-2"></i>IIDA Assistant</h6>
+                <button type="button" class="btn-close btn-close-white" id="ida-chat-close"></button>
+            </div>
+            <div id="ida-chat-messages" class="card-body" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+                <div class="message assistant-message bg-dark p-2 rounded" style="max-width: 85%; align-self: flex-start; font-size: 0.9rem;">
+                    Hello! I'm IIDA Assistant. How can I help you today?
+                </div>
+            </div>
+            <div class="card-footer bg-dark border-top-0" style="padding: 10px;">
+                <div class="input-group">
+                    <input type="text" id="ida-chat-input" class="form-control form-control-sm bg-black border-secondary text-white" placeholder="Type a message..." style="font-size: 0.9rem;">
+                    <button class="btn btn-primary btn-sm" id="ida-chat-send">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggle = document.getElementById('ida-chat-toggle');
+            const window = document.getElementById('ida-chat-window');
+            const close = document.getElementById('ida-chat-close');
+            const input = document.getElementById('ida-chat-input');
+            const send = document.getElementById('ida-chat-send');
+            const messages = document.getElementById('ida-chat-messages');
+
+            toggle.addEventListener('click', () => {
+                window.style.display = window.style.display === 'none' ? 'flex' : 'none';
+                if (window.style.display === 'flex') input.focus();
+            });
+
+            close.addEventListener('click', () => window.style.display = 'none');
+
+            async function sendMessage() {
+                const text = input.value.trim();
+                if (!text) return;
+
+                // Add user message
+                const userMsg = document.createElement('div');
+                userMsg.className = 'message user-message bg-primary p-2 rounded text-white';
+                userMsg.style.cssText = 'max-width: 85%; align-self: flex-end; font-size: 0.9rem;';
+                userMsg.textContent = text;
+                messages.appendChild(userMsg);
+                input.value = '';
+                messages.scrollTop = messages.scrollHeight;
+
+                // Typing indicator
+                const typingMsg = document.createElement('div');
+                typingMsg.className = 'message assistant-message bg-dark p-2 rounded text-muted italic';
+                typingMsg.style.cssText = 'max-width: 85%; align-self: flex-start; font-size: 0.8rem;';
+                typingMsg.textContent = 'IDA is thinking...';
+                messages.appendChild(typingMsg);
+                messages.scrollTop = messages.scrollHeight;
+
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: text })
+                    });
+                    const data = await response.json();
+                    typingMsg.remove();
+                    
+                    const assistantMsg = document.createElement('div');
+                    assistantMsg.className = 'message assistant-message bg-dark p-2 rounded';
+                    assistantMsg.style.cssText = 'max-width: 85%; align-self: flex-start; font-size: 0.9rem;';
+                    assistantMsg.textContent = data.response || 'Sorry, I encountered an error.';
+                    messages.appendChild(assistantMsg);
+                } catch (e) {
+                    typingMsg.remove();
+                    const errMsg = document.createElement('div');
+                    errMsg.className = 'message assistant-message bg-danger p-2 rounded text-white';
+                    errMsg.style.cssText = 'max-width: 85%; align-self: flex-start; font-size: 0.9rem;';
+                    errMsg.textContent = 'Connection error.';
+                    messages.appendChild(errMsg);
+                }
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            send.addEventListener('click', sendMessage);
+            input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        });
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    
+    <script>
+        // PWA Implementation
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                    .then(reg => {
+                        console.log('SW registered');
+                        // After registration, check for updates
+                        reg.update();
+                    })
+                    .catch(err => console.log('SW error', err));
+            });
+        }
+
+        let deferredPrompt;
+        const installBanner = document.getElementById('pwa-install-banner');
+        const installBtn = document.getElementById('pwa-install-btn');
+        const closeBtn = document.getElementById('pwa-close-banner');
+
+        function showBanner() {
+            installBanner.style.setProperty('display', 'flex', 'important');
+            document.body.style.paddingTop = '75px';
+            console.log('Banner displayed with flex');
+        }
+
+        function hideBanner() {
+            installBanner.style.setProperty('display', 'none', 'important');
+            document.body.style.paddingTop = '0';
+        }
+
+        // Clear the closed flag and show banner on every page load
+        localStorage.removeItem('pwa-banner-closed');
+        localStorage.removeItem('pwa-installed');
+        console.log('Banner showing now');
+        showBanner();
+        
+        // Ensure banner is visible after DOM ready
+        document.addEventListener('DOMContentLoaded', showBanner);
+        setTimeout(showBanner, 100);
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt triggered');
+            e.preventDefault();
+            window.deferredPrompt = e;
+            deferredPrompt = e;
+            if (!localStorage.getItem('pwa-banner-closed')) {
+                installBanner.style.setProperty('display', 'block', 'important');
+                document.body.style.paddingTop = '75px';
+            }
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBanner.style.setProperty('display', 'none', 'important');
+                    document.body.style.paddingTop = '0';
+                    localStorage.setItem('pwa-installed', 'true');
+                }
+                deferredPrompt = null;
+            } else {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                
+                if (isStandalone) {
+                    alert('IIDA is already installed and running as an app.');
+                } else if (isIOS) {
+                    alert('To add IIDA to your Home Screen:\n\n1. Tap the Share button (square with arrow up)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" at the top right');
+                } else {
+                    alert('To install IIDA:\n\n1. Tap the browser menu (three dots)\n2. Select "Install app" or "Add to Home screen"');
+                }
+            }
+        });
+
+        closeBtn.addEventListener('click', () => {
+            installBanner.style.setProperty('display', 'none', 'important');
+            document.body.style.paddingTop = '0';
+            localStorage.setItem('pwa-banner-closed', 'true');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            installBanner.style.setProperty('display', 'none', 'important');
+            localStorage.setItem('pwa-installed', 'true');
+            console.log('PWA was installed');
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,13 @@
+.env
+.env.local
+.vercel
+__pycache__/
+*.py[cod]
+*.db
+ida.db
+.pytest_cache/
+.venv/
+venv/
+*.log
+.local/
+.replit

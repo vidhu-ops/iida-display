@@ -1,0 +1,745 @@
+{% extends "base.html" %}
+
+{% block title %}Execution Plan - IDA{% endblock %}
+
+{% block content %}
+<style>
+    .plan-toolbar {
+        background: #000;
+        color: white;
+        padding: 15px 20px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .plan-toolbar-title {
+        font-size: clamp(0.9rem, 3vw, 1.1rem);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        flex-wrap: wrap;
+    }
+
+    .plan-toolbar-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        font-size: clamp(0.8rem, 2vw, 0.95rem);
+        white-space: nowrap;
+    }
+
+    .plan-toolbar-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        color: white;
+        text-decoration: none;
+    }
+
+    @media (max-width: 576px) {
+        .plan-toolbar {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .plan-toolbar-title {
+            width: 100%;
+        }
+
+        .plan-toolbar-btn {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+</style>
+
+<div class="plan-toolbar">
+    <h2 class="plan-toolbar-title">
+        <i class="fas fa-rocket"></i>
+        Execution Plan
+    </h2>
+    <div>
+        <a href="{{ url_for('plan_it_out') }}" class="plan-toolbar-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Plan Builder
+        </a>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    body {
+        background: #f5f7fa;
+        min-height: 100vh;
+    }
+    
+    .plan-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 40px;
+        box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .plan-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        transform: translate(100px, -50px);
+    }
+    
+    .plan-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .plan-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .plan-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.95;
+        margin-bottom: 25px;
+    }
+    
+    .plan-metadata {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .metadata-badge {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 10px 18px;
+        border-radius: 25px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .metadata-badge:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    .challenge-section {
+        background: rgba(122, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 25px;
+        border-radius: 12px;
+        margin-top: 25px;
+        border-left: 4px solid #4facfe;
+    }
+    
+    .challenge-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.8;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+    
+    .challenge-text {
+        font-size: 1.05rem;
+        line-height: 1.6;
+    }
+    
+    .plan-content-section {
+        background: #ffffff !important;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .plan-content-section:hover {
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .section-content {
+        padding: 30px;
+        line-height: 1.8;
+        font-size: 0.95rem;
+        color: #1a1a1a !important;
+        background: #ffffff !important;
+    }
+    
+    .section-content * {
+        color: #1a1a1a !important;
+        background: transparent !important;
+    }
+    
+    .section-content h2 {
+        color: #667eea !important;
+        background: transparent !important;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-top: 25px;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .section-content h3 {
+        color: #667eea !important;
+        background: transparent !important;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-top: 20px;
+        margin-bottom: 12px;
+    }
+    
+    .section-content h4 {
+        color: #764ba2 !important;
+        background: transparent !important;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .section-content h5 {
+        color: #1a1a1a !important;
+        background: transparent !important;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-top: 12px;
+        margin-bottom: 8px;
+    }
+    
+    .section-content ul, 
+    .section-content ol {
+        margin: 15px 0;
+        padding-left: 25px;
+    }
+    
+    .section-content li {
+        margin-bottom: 10px;
+        line-height: 1.7;
+        color: #1a1a1a !important;
+        background: transparent !important;
+    }
+    
+    .section-content p {
+        color: #1a1a1a !important;
+        background: transparent !important;
+    }
+    
+    .section-content strong {
+        color: #333 !important;
+        font-weight: 700;
+        background: transparent !important;
+    }
+    
+    .section-content pre {
+        background: #f5f5f5 !important;
+        color: #1a1a1a !important;
+        border: 1px solid #e0e0e0;
+        padding: 15px;
+        border-radius: 8px;
+        overflow-x: auto;
+    }
+    
+    .section-content code {
+        color: #d63384 !important;
+        background: transparent !important;
+    }
+    
+    .section-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .section-content table {
+        background: #ffffff !important;
+    }
+    
+    .section-content table th {
+        background: #667eea !important;
+        border: 1px solid #667eea;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #ffffff !important;
+    }
+    
+    .section-content table td {
+        border: 1px solid #e0e0e0;
+        padding: 10px 12px;
+        color: #1a1a1a !important;
+        background: #ffffff !important;
+    }
+    
+    .section-content table tr:nth-child(even) {
+        background: #f8f9fa !important;
+    }
+    
+    .section-content table tr:nth-child(odd) {
+        background: #ffffff !important;
+    }
+    
+    .breakdown-card {
+        background: linear-gradient(135deg, #f0f4ff 0%, #f8f5ff 100%);
+        border-left: 5px solid #667eea;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .breakdown-label {
+        font-weight: 600;
+        color: #667eea;
+        font-size: 0.9rem;
+    }
+    
+    .breakdown-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #764ba2;
+    }
+    
+    .breakdown-percentage {
+        font-size: 0.85rem;
+        color: #555;
+        margin-top: 5px;
+    }
+    
+    .breakdown-list {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid #4facfe;
+    }
+    
+    .breakdown-list li {
+        margin: 8px 0;
+        padding: 8px 0;
+        border-bottom: 1px solid #e0e0e0;
+        color: #1a1a1a !important;
+    }
+    
+    .breakdown-list li:last-child {
+        border-bottom: none;
+    }
+    
+    .breakdown-item-label {
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .breakdown-item-value {
+        float: right;
+        font-weight: 700;
+        color: #764ba2;
+    }
+    
+    .cost-highlight {
+        background: #fff3cd;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 700;
+        color: #856404 !important;
+    }
+    
+    .date-highlight {
+        background: #d1ecf1;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+        color: #0c5460 !important;
+    }
+    
+    .metric-highlight {
+        background: #d4edda;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+        color: #155724 !important;
+    }
+    
+    .section-content .breakdown-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 15px 0;
+    }
+    
+    .progress-indicator {
+        text-align: center;
+        padding: 20px;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 8px;
+        margin: 20px 0;
+        color: #667eea;
+    }
+    
+    .loading-indicator {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    
+    .spinner-wrapper {
+        display: inline-block;
+    }
+    
+    .loading-text {
+        font-size: 1.1rem;
+        color: #667eea;
+        margin-top: 20px;
+        font-weight: 500;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-top: 30px;
+    }
+    
+    .btn-primary-custom {
+        background: var(--primary-gradient);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-primary-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+        text-decoration: none;
+        color: white;
+    }
+    
+    .btn-secondary-custom {
+        background: rgba(102, 126, 234, 0.1);
+        border: 2px solid #667eea;
+        padding: 10px 28px;
+        border-radius: 8px;
+        color: #667eea;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary-custom:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+    
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    @media (max-width: 768px) {
+        .plan-title {
+            font-size: 2rem;
+        }
+        
+        .plan-metadata {
+            flex-direction: column;
+        }
+        
+        .metadata-badge {
+            width: 100%;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn-primary-custom, .btn-secondary-custom {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+
+<!-- Hero Header -->
+<div class="plan-header">
+    <div class="container">
+        <div class="plan-header-content">
+            <div class="plan-title">
+                <i class="fas fa-rocket me-3"></i>Execution Plan
+            </div>
+            <p class="plan-subtitle">
+                AI-Generated Strategic Implementation Plan with Detailed Roadmap, Budget Breakdown & Vendor Recommendations
+            </p>
+            
+            <!-- Metadata Badges -->
+            <div class="plan-metadata">
+                <div class="metadata-badge">
+                    <i class="fas fa-tag"></i>
+                    <strong>{{ event_type }}</strong>
+                </div>
+                <div class="metadata-badge">
+                    <i class="fas fa-coins"></i>
+                    <strong>{{ budget }} {{ currency }}</strong>
+                </div>
+                <div class="metadata-badge">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <strong>{{ region }}</strong>
+                </div>
+                <div class="metadata-badge">
+                    <i class="fas fa-calendar-check"></i>
+                    <strong>{{ timeline }}</strong>
+                </div>
+            </div>
+            
+            <!-- Challenge Section -->
+            <div class="challenge-section">
+                <div class="challenge-label">
+                    <i class="fas fa-bullseye me-2"></i>Strategic Challenge
+                </div>
+                <div class="challenge-text">
+                    {{ problem_type }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container mb-5">
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="plan-content-section">
+        <div class="loading-indicator">
+            <div class="spinner-wrapper">
+                <div class="spinner-border text-primary" role="status" style="width: 50px; height: 50px;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <div class="loading-text">
+                <i class="fas fa-hourglass-half me-2"></i>Generating comprehensive execution plan...
+            </div>
+        </div>
+    </div>
+    
+    <!-- Plan Content Container -->
+    <div id="planContentContainer" style="display: none;">
+        <!-- First Half -->
+        <div id="firstHalf" class="plan-content-section" style="display: none;">
+            <div class="section-content"></div>
+        </div>
+        
+        <!-- Progress Indicator -->
+        <div id="progressIndicator" class="progress-indicator" style="display: none;">
+            <i class="fas fa-spinner fa-spin me-2"></i>Loading remainder of plan...
+        </div>
+        
+        <!-- Second Half -->
+        <div id="secondHalf" class="plan-content-section" style="display: none;">
+            <div class="section-content"></div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div id="actionButtonsContainer" style="display: none;">
+        <div class="plan-content-section">
+            <div class="section-content">
+                <div class="action-buttons">
+                    <button class="btn-primary-custom btn-icon" onclick="downloadPlan()">
+                        <i class="fas fa-download"></i>Download Plan
+                    </button>
+                    <button class="btn-secondary-custom btn-icon" onclick="window.print()">
+                        <i class="fas fa-print"></i>Print Plan
+                    </button>
+                    <a href="{{ url_for('plan_it_out') }}" class="btn-secondary-custom btn-icon" style="text-decoration: none; justify-content: center;">
+                        <i class="fas fa-plus"></i>Create New Plan
+                    </a>
+                    <a href="{{ url_for('index') }}" class="btn-secondary-custom btn-icon" style="text-decoration: none; justify-content: center;">
+                        <i class="fas fa-home"></i>Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store the full plan content (JSON encoded to safely handle special characters)
+const fullPlanContent = {{ plan_content|tojson|safe }};
+
+// Progressive loading function
+document.addEventListener('DOMContentLoaded', function() {
+    loadPlanProgressively();
+});
+
+function cleanPlanContent(content) {
+    // Remove Gemini API alerts and notes
+    let cleanedContent = content;
+    
+    // Remove alert divs (alert-info, alert-warning, alert-danger, alert-success, alert-primary)
+    cleanedContent = cleanedContent.replace(/<div class="alert alert-\w+"[^>]*>[\s\S]*?<\/div>/g, '');
+    
+    // Remove note messages
+    cleanedContent = cleanedContent.replace(/<p>.*?<strong>Note:<\/strong>.*?<\/p>/g, '');
+    cleanedContent = cleanedContent.replace(/<p><strong>Note:.*?<\/p>/g, '');
+    
+    return cleanedContent;
+}
+
+function loadPlanProgressively() {
+    // Clean the plan content to remove alerts
+    const cleanedPlanContent = cleanPlanContent(fullPlanContent);
+    
+    // Split content into two halves
+    const contentLength = cleanedPlanContent.length;
+    const midpoint = Math.floor(contentLength / 2);
+    
+    // Find a good break point (near a section boundary)
+    let actualMidpoint = midpoint;
+    const searchDistance = 500;
+    for (let i = midpoint - searchDistance; i < midpoint + searchDistance; i++) {
+        if (cleanedPlanContent[i] === '\n' && cleanedPlanContent[i-1] === '\n') {
+            actualMidpoint = i;
+            break;
+        }
+    }
+    
+    const firstHalf = cleanedPlanContent.substring(0, actualMidpoint);
+    const secondHalf = cleanedPlanContent.substring(actualMidpoint);
+    
+    // Show first half immediately
+    setTimeout(() => {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('planContentContainer').style.display = 'block';
+        document.getElementById('firstHalf').style.display = 'block';
+        document.getElementById('actionButtonsContainer').style.display = 'block';
+        
+        // Set content in the section-content div
+        const firstHalfContent = document.querySelector('#firstHalf .section-content');
+        firstHalfContent.innerHTML = firstHalf;
+        
+        document.getElementById('progressIndicator').style.display = 'block';
+        
+        // Scroll to content
+        document.getElementById('firstHalf').scrollIntoView({ behavior: 'smooth' });
+        
+        // Load second half after a short delay
+        setTimeout(() => {
+            document.getElementById('secondHalf').style.display = 'block';
+            const secondHalfContent = document.querySelector('#secondHalf .section-content');
+            secondHalfContent.innerHTML = secondHalf;
+            document.getElementById('progressIndicator').style.display = 'none';
+        }, 500);
+    }, 300);
+}
+
+function downloadPlan() {
+    const planContent = cleanPlanContent(fullPlanContent);
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + now.toLocaleTimeString();
+    const content = `═══════════════════════════════════════════════════════════════════
+IDA EXECUTION PLAN
+═══════════════════════════════════════════════════════════════════
+
+Generated: ${dateStr}
+
+Initiative Type: {{ event_type }}
+Challenge: {{ problem_type }}
+Budget: {{ budget }} {{ currency }}
+Region: {{ region }}
+Timeline: {{ timeline }}
+
+═══════════════════════════════════════════════════════════════════
+STRATEGIC EXECUTION PLAN
+═══════════════════════════════════════════════════════════════════
+
+${planContent}
+
+═══════════════════════════════════════════════════════════════════
+Generated by IDA - Intelligent Data Analytics Platform
+Powered by Google Gemini AI
+═══════════════════════════════════════════════════════════════════`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `IDA_ExecutionPlan_${event_type.replace(/\s+/g, '_')}_${new Date().getTime()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+
+<style>
+@media print {
+    .plan-header {
+        background: white !important;
+        color: #333 !important;
+        padding: 20px 0 !important;
+        border-bottom: 2px solid #667eea;
+    }
+    
+    .plan-title, .plan-subtitle, .metadata-badge {
+        color: #333 !important;
+    }
+    
+    .action-buttons {
+        display: none !important;
+    }
+    
+    .plan-content-section {
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+}
+</style>
+{% endblock %}

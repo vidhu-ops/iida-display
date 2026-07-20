@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}IIda: Register{% endblock %}
+
+{% block content %}
+<div class="container bg-black my-5">
+    <div class="row">
+        <div class="col-lg-6 mx-auto bg-black">
+            <div class="card bg-black shadow-lg border-success">
+                <div class="card-header bg-black text-white text-center py-4">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="mb-3" style="height: 60px; width: 60px; border-radius: 50%; border: 2px solid white;">
+                    <h4 class="card-title mb-0">
+                        Create IIDATECH Account
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('register') }}" id="register-form">
+                        <div class="mb-3">
+                            <label for="username" class="form-label fw-bold">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required autofocus>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-bold">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label fw-bold">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label fw-bold">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden field for temporary chats -->
+                        <input type="hidden" id="temp_chats" name="temp_chats" value="">
+                        
+                        <div class="d-grid mt-3">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>
+                                Register Account
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <p class="text-center text-muted">
+                        Already have an account?
+                        <a href="{{ url_for('login') }}" class="text-primary fw-bold">
+                            Login here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('register-form');
+    const tempChatsInput = document.getElementById('temp_chats');
+    
+    // Retrieve temporary chats from sessionStorage (set by mentor page when user clicked "Sign Up")
+    const tempChats = sessionStorage.getItem('temp-mentor-chats');
+    if (tempChats) {
+        tempChatsInput.value = tempChats;
+        // Clear sessionStorage after use
+        sessionStorage.removeItem('temp-mentor-chats');
+    }
+    
+    // Also check localStorage for any saved temporary chats
+    if (!tempChats) {
+        const localTempChats = localStorage.getItem('temp-mentor-chats');
+        if (localTempChats) {
+            tempChatsInput.value = localTempChats;
+        }
+    }
+});
+</script>
+{% endblock %}

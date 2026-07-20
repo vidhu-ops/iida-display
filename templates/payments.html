@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Buy Credits - IDA{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row-2 mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="mb-2">
+                <i class="fas fa-coins text-warning me-2"></i>Buy Credits
+            </h1>
+            <p class="text-muted">
+                <strong>Current Balance:</strong> <span class="text-info fs-5">{{ user_credits }} credits</span>
+            </p>
+            <p class="text-muted">Choose a package that suits your needs and unlock unlimited research potential.</p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5 justify-content-center">
+
+        <!-- 10 Credits Package -->
+        <div class="col-lg-5 col-md-10">
+            <div class="card h-100 border-primary shadow-sm hover-shadow" style="transition: all 0.3s ease;">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-bolt text-warning" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h2 class="h4 mb-2">Starter Pack</h2>
+                    <p class="text-muted small mb-3">Great for getting started</p>
+
+                    <div class="display-4 fw-bold text-warning mb-1">10</div>
+                    <div class="text-muted mb-3">Credits</div>
+
+                    <div class="display-5 text-success fw-bold mb-1">₹850</div>
+                    <div class="text-muted small mb-4">₹85 per credit</div>
+
+                    <div class="text-muted small mb-4 text-start d-inline-block">
+                        <p class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> 10 research reports or plans</p>
+                        <p class="mb-2"><i class="fas fa-lock text-info me-2"></i> Secure payment via Cashfree</p>
+                        <p class="mb-0"><i class="fas fa-infinity text-warning me-2"></i> Credits never expire</p>
+                    </div>
+
+                    <button class="btn btn-primary w-100 btn-lg mt-3 pay-btn" data-package-id="10" data-credits="10" data-price="850">
+                        <i class="fas fa-shopping-cart me-2"></i>Buy 10 Credits — ₹850
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 30 Credits Package -->
+        <div class="col-lg-5 col-md-10">
+            <div class="card h-100 border-warning shadow-sm hover-shadow" style="transition: all 0.3s ease; position: relative;">
+                <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%);">
+                    <span class="badge bg-warning text-dark px-3 py-2 fs-6">Best Value</span>
+                </div>
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-gem text-warning" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h2 class="h4 mb-2">Pro Pack</h2>
+                    <p class="text-muted small mb-3">Maximum value for power users</p>
+
+                    <div class="display-4 fw-bold text-warning mb-1">30</div>
+                    <div class="text-muted mb-3">Credits</div>
+
+                    <div class="display-5 text-success fw-bold mb-1">₹2200</div>
+                    <div class="text-muted small mb-4">₹73 per credit — <span class="text-success">Save 14%</span></div>
+
+                    <div class="text-muted small mb-4 text-start d-inline-block">
+                        <p class="mb-2"><i class="fas fa-check-circle text-success me-2"></i> 30 research reports or plans</p>
+                        <p class="mb-2"><i class="fas fa-lock text-info me-2"></i> Secure payment via Cashfree</p>
+                        <p class="mb-0"><i class="fas fa-infinity text-warning me-2"></i> Credits never expire</p>
+                    </div>
+
+                    <button class="btn btn-warning w-100 btn-lg mt-3 pay-btn text-dark fw-bold" data-package-id="30" data-credits="30" data-price="2200">
+                        <i class="fas fa-shopping-cart me-2"></i>Buy 30 Credits — ₹2200
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-question-circle me-2"></i>How Credits Work
+                    </h5>
+                    <ul class="mb-0">
+                        <li class="mb-2"><strong>Research Reports:</strong> 10 credits per generation</li>
+                        <li class="mb-2"><strong>Execution Plans:</strong> 10 credits per generation</li>
+                        <li class="mb-2"><strong>Never Expire:</strong> Your credits are valid indefinitely</li>
+                        <li><strong>Refund Policy:</strong> Contact support for unused credit refunds within 30 days</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-shield-alt me-2"></i>Payment Security
+                    </h5>
+                    <p class="mb-2">We use <strong>Cashfree</strong> for secure payment processing. Your payment information is encrypted and never stored on our servers.</p>
+                    <div class="row">
+                        <div class="col-6">
+                            <p><i class="fas fa-check text-success me-1"></i> 256-bit SSL Encryption</p>
+                            <p><i class="fas fa-check text-success me-1"></i> PCI DSS Compliant</p>
+                        </div>
+                        <div class="col-6">
+                            <p><i class="fas fa-check text-success me-1"></i> Secure Checkout</p>
+                            <p><i class="fas fa-check text-success me-1"></i> Money-back Guarantee</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cashfree JS SDK - Production -->
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script>
+    // Hover effect
+    const style = document.createElement('style');
+    style.textContent = `.hover-shadow:hover { box-shadow: 0 10px 30px rgba(0,123,255,0.3)!important; transform: translateY(-5px); }`;
+    document.head.appendChild(style);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.pay-btn').forEach(btn => {
+            btn.addEventListener('click', async function (e) {
+                e.preventDefault();
+                const packageId = this.dataset.packageId;
+                const originalText = this.innerHTML;
+                const thisBtn = this;
+
+                thisBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                thisBtn.disabled = true;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('package_id', packageId);
+
+                    const response = await fetch('{{ url_for("initiate_payment") }}', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) throw new Error('Failed to initiate payment');
+
+                    const data = await response.json();
+                    console.log('Payment initiated:', data);
+
+                    if (data.success && data.session_id) {
+                        // Use Cashfree JS SDK - opens checkout overlay, redirects to return_url after payment
+                        const cashfree = Cashfree({ mode: "production" });
+                        cashfree.checkout({
+                            paymentSessionId: data.session_id,
+                            redirectTarget: "_self"
+                        }).then(function (result) {
+                            if (result.error) {
+                                console.error('Cashfree error:', result.error);
+                                alert('Payment error: ' + result.error.message);
+                                thisBtn.innerHTML = originalText;
+                                thisBtn.disabled = false;
+                            }
+                            // On success or redirect, Cashfree will auto-redirect to return_url
+                        }).catch(function (err) {
+                            console.error('Checkout error:', err);
+                            thisBtn.innerHTML = originalText;
+                            thisBtn.disabled = false;
+                        });
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to initiate payment'));
+                        thisBtn.innerHTML = originalText;
+                        thisBtn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Payment error:', error);
+                    alert('Payment error: ' + (error.message || 'An unexpected error occurred'));
+                    thisBtn.innerHTML = originalText;
+                    thisBtn.disabled = false;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

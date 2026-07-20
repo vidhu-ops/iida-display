@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}View Execution Plan - IDA{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    body {
+        background: #f5f7fa;
+        min-height: 100vh;
+    }
+    
+    .plan-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 40px;
+        box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .plan-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        transform: translate(100px, -50px);
+    }
+    
+    .plan-header-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .plan-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .plan-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.95;
+        margin-bottom: 25px;
+    }
+    
+    .plan-metadata {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .metadata-badge {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 10px 18px;
+        border-radius: 25px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .metadata-badge:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    .challenge-section {
+        background: rgba(122, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 25px;
+        border-radius: 12px;
+        margin-top: 25px;
+        border-left: 4px solid #4facfe;
+    }
+    
+    .challenge-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.8;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+    
+    .challenge-text {
+        font-size: 1.05rem;
+        line-height: 1.6;
+    }
+    
+    .plan-content-section {
+        background: white;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .plan-content-section:hover {
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .section-content {
+        padding: 30px;
+        line-height: 1.8;
+        font-size: 0.95rem;
+        color: #1a1a1a !important;
+    }
+    
+    .section-content * {
+        color: #1a1a1a !important;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-top: 30px;
+    }
+    
+    .btn-primary-custom {
+        background: var(--primary-gradient);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+        text-decoration: none;
+        color: white;
+    }
+    
+    .btn-secondary-custom {
+        background: rgba(102, 126, 234, 0.1);
+        border: 2px solid #667eea;
+        padding: 10px 28px;
+        border-radius: 8px;
+        color: #667eea;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-secondary-custom:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+</style>
+
+<!-- Hero Header -->
+<div class="plan-header">
+    <div class="container">
+        <div class="plan-header-content">
+            <div class="plan-title">
+                <i class="fas fa-rocket me-3"></i>Execution Plan
+            </div>
+            <p class="plan-subtitle">
+                Saved on {{ plan.created_at.strftime('%B %d, %Y at %H:%M') }}
+            </p>
+            
+            <!-- Metadata Badges -->
+            <div class="plan-metadata">
+                <div class="metadata-badge">
+                    <i class="fas fa-tag"></i>
+                    <strong>{{ plan.event_type }}</strong>
+                </div>
+                <div class="metadata-badge">
+                    <i class="fas fa-coins"></i>
+                    <strong>{{ plan.budget }} {{ plan.currency }}</strong>
+                </div>
+                <div class="metadata-badge">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <strong>{{ plan.region }}</strong>
+                </div>
+                <div class="metadata-badge">
+                    <i class="fas fa-calendar-check"></i>
+                    <strong>{{ plan.timeline }}</strong>
+                </div>
+            </div>
+            
+            <!-- Challenge Section -->
+            <div class="challenge-section">
+                <div class="challenge-label">
+                    <i class="fas fa-bullseye me-2"></i>Strategic Challenge
+                </div>
+                <div class="challenge-text">
+                    {{ plan.problem_type }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container mb-5">
+    <!-- Plan Content -->
+    <div class="plan-content-section">
+        <div class="section-content">
+            {{ plan.plan_content|safe }}
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="plan-content-section">
+        <div class="section-content">
+            <div class="action-buttons">
+                <button class="btn-primary-custom" onclick="downloadPlan()">
+                    <i class="fas fa-download"></i>Download Plan
+                </button>
+                <a href="{{ url_for('execute_page') }}" class="btn-primary-custom" style="text-decoration: none; justify-content: center; background: linear-gradient(135deg, #00c853 0%, #00b74a 100%);">
+                    <i class="fas fa-rocket"></i>Execute It!
+                </a>
+                <button class="btn-secondary-custom" onclick="window.print()">
+                    <i class="fas fa-print"></i>Print Plan
+                </button>
+                <a href="{{ url_for('plan_it_out') }}" class="btn-secondary-custom" style="text-decoration: none; justify-content: center;">
+                    <i class="fas fa-plus"></i>Create New Plan
+                </a>
+                <a href="{{ url_for('saved_plans') }}" class="btn-secondary-custom" style="text-decoration: none; justify-content: center;">
+                    <i class="fas fa-list"></i>All Plans
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% raw %}
+<script>
+function downloadPlan() {
+    const planContent = document.querySelector('.section-content').innerText;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + now.toLocaleTimeString();
+    const content = `═══════════════════════════════════════════════════════════════════
+IDA EXECUTION PLAN
+═══════════════════════════════════════════════════════════════════
+
+Generated: ${dateStr}
+
+Initiative Type: {{ plan.event_type }}
+Challenge: {{ plan.problem_type }}
+Budget: {{ plan.budget }} {{ plan.currency }}
+Region: {{ plan.region }}
+Timeline: {{ plan.timeline }}
+
+═══════════════════════════════════════════════════════════════════
+STRATEGIC EXECUTION PLAN
+═══════════════════════════════════════════════════════════════════
+
+${planContent}
+
+═══════════════════════════════════════════════════════════════════
+Generated by IDA - Intelligent Data Analytics Platform
+Powered by Google Gemini AI
+═══════════════════════════════════════════════════════════════════`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const eventType = '{{ plan.event_type }}'.replace(/\s+/g, '_');
+    a.download = `IDA_ExecutionPlan_${eventType}_${new Date().getTime()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+{% endraw %}
+
+<style>
+@media print {
+    .plan-header {
+        background: white !important;
+        color: #333 !important;
+        padding: 20px 0 !important;
+        border-bottom: 2px solid #667eea;
+    }
+    
+    .plan-title, .plan-subtitle, .metadata-badge {
+        color: #333 !important;
+    }
+    
+    .action-buttons {
+        display: none !important;
+    }
+    
+    .plan-content-section {
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+}
+</style>
+{% endblock %}

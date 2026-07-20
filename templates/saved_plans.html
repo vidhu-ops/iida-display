@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Saved Execution Plans - IDA{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="mb-4">
+                <i class="fas fa-history me-2"></i>My Saved Execution Plans
+            </h2>
+            
+            {% if plans %}
+                <div class="row">
+                    {% for plan in plans %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0 shadow-sm" style="transition: all 0.3s ease;">
+                                <div class="card-body">
+                                    <h5 class="card-title" style="color: #667eea;">
+                                        <i class="fas fa-rocket me-2"></i>{{ plan.event_type }}
+                                    </h5>
+                                    <p class="card-text text-muted small mb-2">
+                                        <strong>Challenge:</strong> {{ plan.problem_type[:100] }}{% if plan.problem_type|length > 100 %}...{% endif %}
+                                    </p>
+                                    <p class="card-text small mb-3">
+                                        <i class="fas fa-coins me-2"></i><strong>Budget:</strong> {{ plan.budget }} {{ plan.currency }}<br>
+                                        <i class="fas fa-map-marker-alt me-2"></i><strong>Region:</strong> {{ plan.region }}<br>
+                                        <i class="fas fa-calendar me-2"></i><strong>Timeline:</strong> {{ plan.timeline }}<br>
+                                        <i class="fas fa-clock me-2"></i><strong>Created:</strong> {{ plan.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </p>
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ url_for('view_plan', plan_id=plan.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye me-1"></i>View Plan
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    You haven't created any execution plans yet. 
+                    <a href="{{ url_for('plan_it_out') }}" class="alert-link">Create your first plan now!</a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-cogs me-2"></i>Quick Actions
+                    </h5>
+                    <a href="{{ url_for('plan_it_out') }}" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-plus me-2"></i>Create New Plan
+                    </a>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary w-100">
+                        <i class="fas fa-home me-2"></i>Back to Home
+                    </a>
+                    
+                    <div class="mt-4 pt-3 border-top">
+                        <p class="text-muted small mb-2">
+                            <strong>Total Plans:</strong> {{ plans|length }}
+                        </p>
+                        {% if plans %}
+                            <p class="text-muted small mb-0">
+                                <strong>Latest:</strong> {{ plans[0].created_at.strftime('%b %d, %Y') }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 12px;
+    }
+    
+    .card:hover {
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.15) !important;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}

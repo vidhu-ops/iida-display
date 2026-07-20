@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}IIda: Analyse & Plan{% endblock %}
+
+{% block content %}
+<div class="full bg-black my-5">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="mb-4" style="height: 100px; width: 100px; border-radius: 50%; border: 3px solid var(--ida-info);">
+            <h1 class="display-4 fw-bold mb-3">
+                ANALYSIS - BUSINESS PLAN - SOLUTIONS - EXECUTION
+            </h1>
+            <p class="lead text-lg text-muted mb-3">
+                Advanced research, business dvelopment and business plan platform with live analytics and actionable insights. 
+                Generate data-driven reports with real market numbers, strategic recommendations, and implementation roadmaps across any domain.
+            </p>
+            
+            <!-- Status Indicators -->
+            
+        </div>
+    </div>
+
+    <!-- Authentication Required Message -->
+    {% if not current_user.is_authenticated %}
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-lock me-2"></i>
+                <strong>Login Required:</strong> Please 
+                <a href="{{ url_for('login') }}" class="alert-link">login</a> or 
+                <a href="{{ url_for('register') }}" class="alert-link">register</a> to generate research reports.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Credits Information -->
+    {% if current_user.is_authenticated %}
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card bg-dark border-info">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h6 class="text-info mb-1">Your Credits</h6>
+                            <div class="display-6 text-success">{{ current_user.credits }}</div>
+                            <small class="text-muted">Available Credits</small>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-info mb-1">Report Generation</h6>
+                            <p class="small text-muted mb-0">
+                                <i class="fas fa-info-circle text-info me-1"></i>
+                                Each new research report costs 10 credits.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mb-4">
+        <div class="col-lg-10 mx-auto">
+            <ul class="nav nav-tabs nav-fill" id="analysisTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#research-tab" type="button" role="tab">Research</button>
+                </li>
+            </ul>
+            <div class="tab-content pt-4">
+                <div class="tab-pane fade show active" id="research-tab" role="tabpanel">
+                    <div class="figma-wrapper">
+                        <div id="figma-container" class="card bg-dark border-primary overflow-hidden">
+                                <iframe 
+                                id="figma-iframe"
+                                src="https://aggressive-crushing-learning.replit.app" 
+                                style="width: 100%; height: 100%; border: none;"
+                                allowfullscreen>
+                            </iframe>
+                            <div class="card-footer bg-dark border-top d-flex justify-content-between align-items-center py-3">
+                                <div class="text-muted small">
+                                    <i class="fas fa-info-circle me-2"></i> To Complete your analysis, then click the button to confirm.
+                                </div>
+                                <button id="complete-figma-btn" class="btn btn-success">
+                                    <i class="fas fa-check-circle me-2"></i>Analysis Completed
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="figma-overlay" class="card bg-dark border-primary py-5 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-3x text-warning mb-4"></i>
+                                <h3 class="mb-3">Ready to start your work?</h3>
+                                <p class="text-muted mb-4">
+                                    Opening this analysis module will deduct <strong>10 credits</strong> from your account.<br>
+                                    You will be free to research and save one topic in this session.
+                                </p>
+                                <button id="unlock-figma-btn" class="btn btn-lg btn-secondary">
+                                    <i class="fas fa-unlock me-2"></i>Unlock & Proceed
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Figma WebView Section -->
+    <style>
+        .figma-wrapper {
+            position: relative;
+            height: 900px;
+        }
+        
+        #figma-container {
+            height: 100%;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+        
+        #figma-container.unlocked {
+            opacity: 1 !important;
+        }
+        
+        #figma-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 10, 0.3) !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border: 1px solid rgba(13, 110, 253, 0.25);
+        }
+        
+        #figma-overlay.hidden {
+            display: none !important;
+        }
+        
+        /* Print styles to hide URL and page numbers */
+        @page {
+            margin: 0cm !important;
+            padding: 0 !important;
+            size: auto !important;
+        }
+        
+        @page :first {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        @page :left {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        @page :right {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        @media print {
+            * {
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+                box-shadow: none !important;
+            }
+            
+            html {
+                margin: 0 !important;
+                padding: 0 !important;
+                height: 100% !important;
+                width: 100% !important;
+            }
+            
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                overflow: visible !important;
+                background: white !important;
+            }
+            
+            .navbar, footer, .card-footer, #figma-overlay, .row, .container, .container-fluid, 
+            .page-break, .break, header, nav, main > *:not(.figma-wrapper), hr, br {
+                display: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: 0 !important;
+                width: 0 !important;
+            }
+            
+            main {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+            
+            .figma-wrapper {
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                width: 100% !important;
+                height: 100% !important;
+                position: static !important;
+            }
+            
+            #figma-container {
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                width: 100% !important;
+                height: 100% !important;
+                position: static !important;
+                page-break-inside: avoid !important;
+            }
+            
+            #figma-iframe {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                border: none !important;
+                display: block !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                page-break-inside: avoid !important;
+            }
+        }
+    </style>
+
+    <script>
+        function renderMarkdown(text) {
+            return text
+                .replace(/^## (.*$)/gim, '<h4 class="text-info mt-4 mb-2">$1</h4>')
+                .replace(/^### (.*$)/gim, '<h5 class="text-warning mt-3 mb-2">$1</h5>')
+                .replace(/^# (.*$)/gim, '<h3 class="text-white mt-4 mb-3">$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-warning">$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^- (.*$)/gim, '<li class="mb-1">$1</li>')
+                .replace(/(<li.*<\/li>\n?)+/g, '<ul class="mb-3">$&</ul>')
+                .replace(/\n\n/g, '</p><p class="mb-2">')
+                .replace(/\n/g, '<br>');
+        }
+
+        const competitiveRun = document.getElementById('competitive-run');
+        if (competitiveRun) {
+            competitiveRun.addEventListener('click', function() {
+                const idea = document.getElementById('competitive-idea').value.trim();
+                const industry = document.getElementById('competitive-industry').value.trim();
+                const location = document.getElementById('competitive-location').value.trim();
+                const loading = document.getElementById('competitive-loading');
+                const output = document.getElementById('competitive-output');
+
+                if (!idea || !industry || !location) {
+                    output.innerHTML = '<div class="alert alert-warning">Please fill in all three fields.</div>';
+                    return;
+                }
+
+                loading.style.display = 'block';
+                loading.innerHTML = '<div class="spinner-border spinner-border-sm text-info me-2"></div> Generating competitive analysis... This may take up to 30 seconds.';
+                output.innerHTML = '';
+                competitiveRun.disabled = true;
+
+                fetch('/api/competitive-analysis', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({idea, industry, location})
+                }).then(r => r.json()).then(data => {
+                    loading.style.display = 'none';
+                    competitiveRun.disabled = false;
+                    if (data.analysis) {
+                        output.innerHTML = '<div class="border border-info rounded p-4 mt-2">' + renderMarkdown(data.analysis) + '</div>';
+                    } else {
+                        output.innerHTML = '<div class="alert alert-danger">' + (data.error || 'No analysis returned.') + '</div>';
+                    }
+                }).catch(() => {
+                    loading.style.display = 'none';
+                    competitiveRun.disabled = false;
+                    output.innerHTML = '<div class="alert alert-danger">Error connecting to analysis service. Please try again.</div>';
+                });
+            });
+        }
+
+        document.getElementById('unlock-figma-btn').addEventListener('click', function() {
+            if (confirm('Are you ready to ask your question? Opening this will reduce 10 credits and you will be free to research and save 1 topic.')) {
+                fetch('/api/deduct_credits', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('figma-overlay').classList.add('hidden');
+                        document.getElementById('figma-container').classList.add('unlocked');
+                        // Update credit display in navbar if exists
+                        const creditDisplay = document.querySelector('.navbar-nav .text-info strong');
+                        if (creditDisplay) {
+                            creditDisplay.textContent = data.remaining_credits;
+                        }
+                    } else if (data.redirect) {
+                        if (confirm('You do not have enough credits to unlock this workspace. Click OK to buy credits.')) {
+                            window.location.href = data.redirect;
+                        }
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to deduct credits'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            }
+        });
+
+        document.getElementById('complete-figma-btn').addEventListener('click', function() {
+            alert('Analysis session completed. You have successfully used this research slot.');
+            location.reload();
+        });
+
+        // Handle print events to suppress headers and footers
+        window.addEventListener('beforeprint', function() {
+            // Force no margins
+            document.documentElement.style.margin = '0';
+            document.documentElement.style.padding = '0';
+            document.body.style.margin = '0';
+            document.body.style.padding = '0';
+            
+            // Hide all non-essential elements
+            const toHide = document.querySelectorAll('header, footer, nav, .navbar, .card-footer, #figma-overlay, main > *:not(.figma-wrapper)');
+            toHide.forEach(el => {
+                el.style.display = 'none !important';
+                el.style.margin = '0 !important';
+                el.style.padding = '0 !important';
+            });
+
+            // Show print instructions
+            showPrintInstructions();
+        });
+
+        // When user prints from Figma, ensure clean output
+        window.addEventListener('afterprint', function() {
+            // Restore styles
+            document.documentElement.style.margin = '';
+            document.documentElement.style.padding = '';
+            document.body.style.margin = '';
+            document.body.style.padding = '';
+            
+            // Restore hidden elements
+            const toShow = document.querySelectorAll('header, footer, nav, .navbar, .card-footer, main > *:not(.figma-wrapper)');
+            toShow.forEach(el => {
+                el.style.display = '';
+                el.style.margin = '';
+                el.style.padding = '';
+            });
+        });
+
+        // Show print instructions dialog
+        function showPrintInstructions() {
+            const instructions = `
+IMPORTANT: To remove headers and footers from your PDF:
+
+1. In the print dialog, look for "Options" or "More settings"
+2. UNCHECK the "Headers and footers" checkbox
+3. Then click "Save" to download
+
+This will ensure your PDF has no URL or page numbers at the bottom.
+
+Did you uncheck "Headers and footers"?
+            `;
+            
+            // Use setTimeout to show after print dialog opens
+            setTimeout(() => {
+                const userConfirmed = confirm(instructions);
+                if (!userConfirmed) {
+                    console.log('Please disable headers and footers in print settings');
+                }
+            }, 500);
+        }
+
+        // Override print to show instructions
+        const originalPrint = window.print;
+        window.print = function() {
+            setTimeout(() => {
+                showPrintInstructions();
+            }, 100);
+            return originalPrint.apply(this, arguments);
+        };
+    </script>
+
+    <!-- Research Form -->
+    {% if current_user.is_authenticated %}
+    
+    {% endif %}
+
+    <!-- Recent Plans Section -->
+    {% if current_user.is_authenticated and recent_plans %}
+   
+    {% endif %}
+</div>
+{% endblock %}

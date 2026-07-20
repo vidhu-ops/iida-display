@@ -1,0 +1,196 @@
+<div class="container bg-black my-5">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 fw-bold mb-3">
+                <i class="fas fa-brain text-primary me-3"></i>
+                IIDATECH - READY FOR THE NEXT
+            </h1>
+            <p class="lead text-muted mb-4">
+                Advanced research, business development, business plan, financial analysis and execution platform with live analytics and actionable insights. 
+                Generate idea and business reports with real market numbers, strategic recommendations, and implementation roadmaps across any domain.
+            </p>
+            
+            <!-- Status Indicators -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-secondary">
+                        <div class="card-body py-2">
+                            <small class="text-muted">Knowledge Base Status</small>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-database me-2 text-info"></i>
+                                <span class="fw-bold">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-secondary">
+                        <div class="card-body py-2">
+                            <small class="text-muted"> Engine Status</small>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-robot me-2 {% if gemini_status %}text-success{% else %}text-warning{% endif %}"></i>
+                                <span class="fw-bold">{% if gemini_status %}Connected{% else %}Check Config{% endif %}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Required Message -->
+    {% if not current_user.is_authenticated %}
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-lock me-2"></i>
+                <strong>Login Required:</strong> Please 
+                <a href="{{ url_for('login') }}" class="alert-link">login</a> or 
+                <a href="{{ url_for('register') }}" class="alert-link">register</a> to generate research reports.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Credits Information -->
+    {% if current_user.is_authenticated %}
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card bg-dark border-info">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h6 class="text-info mb-1">Your Credits</h6>
+                            <div class="display-6 text-success">{{ current_user.credits }}</div>
+                            <small class="text-muted">Available Credits</small>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-info mb-1">Report Generation</h6>
+                            <p class="small text-muted mb-0">
+                                <i class="fas fa-info-circle text-info me-1"></i>
+                                Each new research report costs 10 credits.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Research Form -->
+    {% if current_user.is_authenticated %}
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card bg-dark border-primary">
+                <div class="card-header bg-primary py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search me-2"></i>Research Query Generator
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="research-form" method="post" action="{{ url_for('generate_report') }}">
+                        <!-- Question Input -->
+                        <div class="mb-4">
+                            <label for="question" class="form-label fw-bold">What would you like to research?</label>
+                            <textarea 
+                                class="form-control form-control-lg" 
+                                id="question" 
+                                name="question" 
+                                placeholder="e.g., Trends in AI-powered healthcare solutions, Market analysis for sustainable fashion, Impact of remote work on productivity..." 
+                                rows="3" 
+                                required></textarea>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Be specific for better results. Include industry, region, or focus area if relevant.
+                            </small>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-lg btn-primary" id="generate-btn">
+                                <i class="fas fa-cogs me-2"></i>Generate Comprehensive Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Features Section -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <h3 class="text-center mb-4">
+                <i class="fas fa-star text-warning me-2"></i>Platform Capabilities
+            </h3>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Real-Time Analytics</h5>
+                            <p class="card-text">Live market data, competitive analysis, and performance metrics integrated with AI-powered insights.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-database fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">Comprehensive Knowledge</h5>
+                            <p class="card-text">Access to vast knowledge across all domains including technology, business, science, and industry trends.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-lightbulb fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Strategic Recommendations</h5>
+                            <p class="card-text">Actionable suggestions with implementation timelines, ROI projections, and measurable success metrics.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports Section -->
+    {% if current_user.is_authenticated and recent_reports %}
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <h3 class="mb-4">
+                <i class="fas fa-history text-info me-2"></i>Your Recent Reports
+            </h3>
+            <div class="row g-3">
+                {% for report in recent_reports %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-info">
+                        <div class="card-body">
+                            <h6 class="card-title text-truncate">{{ report.title }}</h6>
+                            <p class="card-text small text-muted mb-2">
+                                {{ report.question[:60] }}{% if report.question|length > 60 %}...{% endif %}
+                            </p>
+                            <div class="d-flex gap-2 justify-content-between">
+                                <small class="text-info">
+                                    <i class="fas fa-calendar me-1"></i>{{ report.created_at.strftime('%b %d') }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-dark">
+                            <a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-eye me-1"></i>View Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>

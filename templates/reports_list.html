@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Plans History - IDA{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-history text-primary me-3"></i>
+                    Reports & Execution Plans
+                </h2>
+                <div class="btn-group">
+                    <a href="/" class="btn btn-outline-primary">
+                        <i class="fas fa-file-alt me-2"></i>
+                        New Report
+                    </a>
+                    <a href="{{ url_for('plan_it_out') }}" class="btn btn-outline-success">
+                        <i class="fas fa-rocket me-2"></i>
+                        New Plan
+                    </a>
+                </div>
+            </div>
+
+            {% if items %}
+                <div class="row">
+                    {% for item in items %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        {% if item.type == 'report' %}
+                            <!-- Research Report Card -->
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light" style="border-bottom: 3px solid #667eea;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-file-alt me-1 text-primary"></i>
+                                            Research Report
+                                        </small>
+                                        <small class="text-muted">
+                                            {{ item.created_at.strftime('%b %d') }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ item.title }}{% if item.title|length == 80 %}...{% endif %}</h6>
+                                    <p class="card-text mb-0">
+                                        <span class="badge bg-info me-2">{{ item.category }}</span>
+                                        {% if item.subcategory %}
+                                        <span class="badge bg-secondary">{{ item.subcategory }}</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <div class="d-grid gap-2">
+                                        <a href="/report/{{ item.id }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>
+                                            View Report
+                                        </a>
+                                        <a href="{{ url_for('execute_page') }}" class="btn btn-success btn-sm">
+                                            <i class="fas fa-rocket me-1"></i>
+                                            Execute It!
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- Execution Plan Card -->
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light" style="border-bottom: 3px solid #764ba2;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-rocket me-1 text-success"></i>
+                                            Execution Plan
+                                        </small>
+                                        <small class="text-muted">
+                                            {{ item.created_at.strftime('%b %d') }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title text-success">{{ item.event_type }}</h6>
+                                    <p class="card-text small mb-3">
+                                        <i class="fas fa-align-left me-1"></i>{{ item.title[:60] }}{% if item.title|length > 60 %}...{% endif %}
+                                    </p>
+                                    <p class="card-text small mb-0">
+                                        <i class="fas fa-coins me-1"></i><strong>{{ item.budget }} {{ item.currency }}</strong><br>
+                                        <i class="fas fa-map-marker-alt me-1"></i><strong>{{ item.region }}</strong>
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <div class="d-grid gap-2">
+                                        <a href="/plan/{{ item.id }}" class="btn btn-success btn-sm">
+                                            <i class="fas fa-eye me-1"></i>
+                                            View Plan
+                                        </a>
+                                        <a href="{{ url_for('execute_page') }}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-rocket me-1"></i>
+                                            Execute It!
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-5x text-muted mb-4"></i>
+                    <h4 class="text-muted">No Reports or Plans Yet</h4>
+                    <p class="text-muted">Start by creating your first research report or execution plan.</p>
+                    <div class="mt-4">
+                        <a href="/" class="btn btn-primary me-2">
+                            <i class="fas fa-file-alt me-1"></i>
+                            Generate Report
+                        </a>
+                        <a href="{{ url_for('plan_it_out') }}" class="btn btn-success">
+                            <i class="fas fa-rocket me-1"></i>
+                            Create Plan
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

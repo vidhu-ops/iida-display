@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Plan It Out - IDA{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Quick Link to Saved Plans -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="alert alert-info d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-history me-2"></i>
+                    <strong>Tip:</strong> Your execution plans are automatically saved. 
+                    <a href="{{ url_for('saved_plans') }}" class="alert-link">View all your saved plans</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Header -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="text-white">
+                        <h2 class="card-title mb-2">
+                            <i class="fas fa-lightbulb me-3"></i>Plan It Out
+                        </h2>
+                        <p class="mb-0 opacity-75">
+                            Transform your challenges into actionable execution plans with insights
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('plan_it_out') }}">
+                        <!-- Event Type Selection -->
+                        <div class="mb-4">
+                            <label for="event_type" class="form-label fw-bold">
+                                <i class="fas fa-tag me-2 text-primary"></i>
+                                Event Type / Business Category
+                            </label>
+                            <select class="form-select form-select-lg" id="event_type" name="event_type" required>
+                                <option value="">-- Select an event type --</option>
+                                <option value="Product Launch">Product Launch</option>
+                                <option value="Marketing Campaign">Marketing Campaign</option>
+                                <option value="Business Expansion">Business Expansion</option>
+                                <option value="Event Planning">Event Planning</option>
+                                <option value="Software Development">Software Development</option>
+                                <option value="Digital Transformation">Digital Transformation</option>
+                                <option value="Retail Store Opening">Retail Store Opening</option>
+                                <option value="Corporate Training Program">Corporate Training Program</option>
+                                <option value="System Migration">System Migration</option>
+                                <option value="Business Startup">Business Startup</option>
+                                <option value="Website Redesign">Website Redesign</option>
+                                <option value="Supply Chain Optimization">Supply Chain Optimization</option>
+                                <option value="Customer Service Initiative">Customer Service Initiative</option>
+                                <option value="Infrastructure Upgrade">Infrastructure Upgrade</option>
+                                <option value="M&A Integration">M&A Integration</option>
+                                <option value="Process Improvement">Process Improvement</option>
+                                <option value="Other/Custom">Other/Custom</option>
+                            </select>
+                            <small class="form-text text-muted">Select the type of business/event to customize the execution plan accordingly.</small>
+                        </div>
+
+                        <!-- Problem Type -->
+                        <div class="mb-4">
+                            <label for="problem_type" class="form-label fw-bold">
+                                <i class="fas fa-exclamation-circle me-2 text-warning"></i>
+                                Describe Your Challenge
+                            </label>
+                            <textarea 
+                                class="form-control form-control-lg" 
+                                id="problem_type" 
+                                name="problem_type" 
+                                rows="4"
+                                placeholder="Describe the problem or challenge you want to plan for. Be specific about what you're trying to solve (e.g., 'We need to implement a cloud migration strategy for our legacy financial systems' or 'Build a mobile app for local delivery service with real-time tracking')"
+                                required
+                            ></textarea>
+                            <small class="form-text text-muted">Minimum 20 characters. Be detailed for better planning.</small>
+                        </div>
+
+                        <!-- Budget & Currency Row -->
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="budget" class="form-label fw-bold">
+                                    <i class="fas fa-dollar-sign me-2 text-success"></i>
+                                    Budget Amount
+                                </label>
+                                <input 
+                                    type="number" 
+                                    class="form-control form-control-lg" 
+                                    id="budget" 
+                                    name="budget" 
+                                    placeholder="Enter budget amount (e.g., 50000)"
+                                    min="1000"
+                                    step="1000"
+                                    required
+                                >
+                                <small class="form-text text-muted">The execution plan will be tailored to this budget.</small>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <label for="currency" class="form-label fw-bold">
+                                    <i class="fas fa-globe me-2 text-info"></i>
+                                    Currency
+                                </label>
+                                <select class="form-select form-select-lg" id="currency" name="currency" required>
+                                    <option value="USD">USD - United States Dollar</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="GBP">GBP - British Pound</option>
+                                    <option value="JPY">JPY - Japanese Yen</option>
+                                    <option value="CNY">CNY - Chinese Yuan</option>
+                                    <option value="INR">INR - Indian Rupee</option>
+                                    <option value="AUD">AUD - Australian Dollar</option>
+                                    <option value="CAD">CAD - Canadian Dollar</option>
+                                    <option value="CHF">CHF - Swiss Franc</option>
+                                    <option value="SGD">SGD - Singapore Dollar</option>
+                                    <option value="AED">AED - UAE Dirham</option>
+                                    <option value="BRL">BRL - Brazilian Real</option>
+                                    <option value="MXN">MXN - Mexican Peso</option>
+                                    <option value="ZAR">ZAR - South African Rand</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Region Selection -->
+                        <div class="mb-4">
+                            <label for="region" class="form-label fw-bold">
+                                <i class="fas fa-map-marker-alt me-2 text-danger"></i>
+                                Execution Region
+                            </label>
+                            <select class="form-select form-select-lg" id="region" name="region" required>
+                                <option value="">-- Select a region --</option>
+                                <option value="North America">North America</option>
+                                <option value="Europe">Europe</option>
+                                <option value="Asia-Pacific">Asia-Pacific</option>
+                                <option value="Middle East & Africa">Middle East & Africa</option>
+                                <option value="Latin America">Latin America</option>
+                                <option value="Global">Global</option>
+                                <option value="United States">United States</option>
+                                <option value="Canada">Canada</option>
+                                <option value="United Kingdom">United Kingdom</option>
+                                <option value="Western Europe">Western Europe</option>
+                                <option value="India">India</option>
+                                <option value="Southeast Asia">Southeast Asia</option>
+                                <option value="China">China</option>
+                                <option value="Japan">Japan</option>
+                                <option value="Australia">Australia</option>
+                                <option value="Brazil">Brazil</option>
+                                <option value="Mexico">Mexico</option>
+                                <option value="UAE">UAE</option>
+                                <option value="South Africa">South Africa</option>
+                            </select>
+                            <small class="form-text text-muted">Select the region where your plan will be executed for location-specific insights.</small>
+                        </div>
+
+                        <!-- Timeline Input -->
+                        <div class="mb-4">
+                            <label for="timeline" class="form-label fw-bold">
+                                <i class="fas fa-calendar me-2 text-info"></i>
+                                Project Timeline
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control form-control-lg" 
+                                id="timeline" 
+                                name="timeline" 
+                                placeholder="e.g., 3 months, 6 weeks, Q1 2025, 12-15 months"
+                                required
+                            >
+                            <small class="form-text text-muted">Enter your project timeline (e.g., 3 months, 6 weeks, Q1 2025, 12-15 months). This will adjust the plan's scope, pacing, and resource allocation.</small>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 pt-3">
+                            <button type="submit" class="btn btn-lg btn-primary">
+                                <i class="fas fa-magic me-2"></i>Generate Execution Plan
+                            </button>
+                            <a href="{{ url_for('index') }}" class="btn btn-lg btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Home
+                            </a>
+                        </div>
+
+                        <!-- Credits & Wait Info -->
+                        <div class="alert alert-info mt-4 mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Credits Required:</strong> Creating an execution plan costs <strong>10 credits</strong>. 
+                            You currently have <strong>{{ current_user.credits }} credits</strong>.
+                        </div>
+                        <div class="alert alert-warning mt-3 mb-0">
+                            <i class="fas fa-hourglass-half me-2"></i>
+                            <strong>Please Wait:</strong> Generating a comprehensive execution plan may take <strong>30-60 seconds</strong>. 
+                            Your browser will display the complete detailed plan once generation is complete. Do not refresh or close this page.
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Cards -->
+            <div class="row mt-5 g-3">
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-white">
+                                <i class="fas fa-project-diagram fa-2x mb-3"></i><br>
+                                Flowcharts
+                            </h5>
+                            <p class="card-text small text-muted">Visual roadmaps showing project phases, dependencies, and decision points.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-success">
+                                <i class="fas fa-tasks fa-2x mb-3"></i><br>
+                                Action Plans
+                            </h5>
+                            <p class="card-text small text-muted">Detailed step-by-step execution plans with timelines and milestones.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-warning">
+                                <i class="fas fa-handshake fa-2x mb-3"></i><br>
+                                Vendor Insights
+                            </h5>
+                            <p class="card-text small text-muted">Recommended vendors, tools, and partners for implementation.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

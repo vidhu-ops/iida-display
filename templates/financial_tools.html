@@ -1,0 +1,1116 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Tools - IDA{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <h1 class="display-5 mb-2">Financial Projection Tools</h1>
+            <p class="text-muted">Create detailed financial analyses with automated calculations, scenario planning, and sensitivity analysis to minimize errors.</p>
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle me-2"></i><strong>Real-time Calculations:</strong> All results update automatically as you modify inputs. Perfect for financial planning and forecasting.
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <ul class="nav nav-tabs nav-fill" role="tablist" style="flex-wrap: wrap;">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active text-white" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow" type="button" role="tab">
+                        <i class="fas fa-water me-2 text-white"></i>Cash Flow Statement
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active text-white" id="balancesheet-tab" data-bs-toggle="tab" data-bs-target="#balancesheet" type="button" role="tab">
+                        <i class="fas fa-balance-scale me-2 text-white"></i>Balance Sheet
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-white" id="pl-tab" data-bs-toggle="tab" data-bs-target="#pl" type="button" role="tab">
+                        <i class="fas fa-chart-pie me-2 text-white"></i>P&L Analysis
+                    </button>
+                </li>
+                <li class="nav-item text-white" role="presentation">
+                    <button class="nav-link text-white" id="breakeven-tab" data-bs-toggle="tab" data-bs-target="#breakeven" type="button" role="tab">
+                        <i class="fas fa-chart-area me-2 text-white"></i>Break-Even Analysis
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-white" id="scenario-tab" data-bs-toggle="tab" data-bs-target="#scenario" type="button" role="tab">
+                        <i class="fas fa-project-diagram me-2 text-white"></i>Scenario Planning
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="financialTabContent">
+        <!-- Cash Flow Statement -->
+        <div class="tab-pane fade show active" id="cashflow" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0">Cash Flow Inputs</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Period (Months):</label>
+                                <input type="number" class="form-control" id="cfPeriods" value="12" min="1" max="60" onchange="calculateCashFlow()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Opening Cash Balance ($):</label>
+                                <input type="number" class="form-control" id="cfOpeningBalance" value="50000" step="1000" onchange="calculateCashFlow()">
+                            </div>
+                            <h6 class="mt-4 mb-3">Monthly Averages</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Operating Cash Inflows ($):</label>
+                                <input type="number" class="form-control" id="cfInflows" value="25000" step="1000" onchange="calculateCashFlow()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Operating Cash Outflows ($):</label>
+                                <input type="number" class="form-control" id="cfOutflows" value="15000" step="1000" onchange="calculateCashFlow()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Investment Outflows ($):</label>
+                                <input type="number" class="form-control" id="cfInvestment" value="5000" step="1000" onchange="calculateCashFlow()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Financing Inflows ($):</label>
+                                <input type="number" class="form-control" id="cfFinancing" value="0" step="1000" onchange="calculateCashFlow()">
+                            </div>
+                            <button class="btn btn-success w-100 mb-2" onclick="calculateCashFlow()"><i class="fas fa-sync me-2"></i>Recalculate</button>
+                            <button class="btn btn-outline-secondary w-100" onclick="printTable('cashflowTable', 'Cash Flow Statement')"><i class="fas fa-print me-2"></i>Print</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0 text-white">Cash Flow Summary & Metrics</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="alert alert-success mb-0">
+                                        <small>Average Monthly CF</small>
+                                        <div class="h6 mb-0" id="cf_avg">$0</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="alert alert-info mb-0">
+                                        <small>Cumulative CF</small>
+                                        <div class="h6 mb-0" id="cf_cumulative">$0</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="alert alert-warning mb-0">
+                                        <small>Ending Cash</small>
+                                        <div class="h6 mb-0" id="cf_ending">$0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-dark table-sm mb-0">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th>Month</th>
+                                            <th>Opening</th>
+                                            <th>Operating</th>
+                                            <th>Investment</th>
+                                            <th>Financing</th>
+                                            <th>Closing</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cashflowTable">
+                                        <tr><td colspan="6" class="text-center text-muted">Click Calculate to generate</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="cashflowChart" class="mt-3" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Sheet -->
+        <div class="tab-pane fade" id="balancesheet" role="tabpanel">
+            <div class="row text-white">
+                <div class="col-lg-5">
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">Balance Sheet Inputs</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="mb-3">Assets</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Cash & Equivalents ($):</label>
+                                <input type="number" class="form-control" id="bsAssetsCash" value="50000" step="1000" onchange="calculateBalanceSheet()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Accounts Receivable ($):</label>
+                                <input type="number" class="form-control" id="bsAssetsAR" value="30000" step="1000" onchange="calculateBalanceSheet()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Inventory ($):</label>
+                                <input type="number" class="form-control" id="bsAssetsInventory" value="40000" step="1000" onchange="calculateBalanceSheet()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Fixed Assets ($):</label>
+                                <input type="number" class="form-control" id="bsAssetsFixed" value="100000" step="1000" onchange="calculateBalanceSheet()">
+                            </div>
+                            <h6 class="mb-3 mt-4">Liabilities</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Accounts Payable ($):</label>
+                                <input type="number" class="form-control" id="bsLiabilitiesAP" value="25000" step="1000" onchange="calculateBalanceSheet()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Short-term Debt ($):</label>
+                                <input type="number" class="form-control" id="bsLiabilitiesShortDebt" value="20000" step="1000" onchange="calculateBalanceSheet()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Long-term Debt ($):</label>
+                                <input type="number" class="form-control" id="bsLiabilitiesLongDebt" value="50000" step="1000" onchange="calculateBalanceSheet()">
+                            </div>
+                            <h6 class="mb-3 mt-4">Equity</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Retained Earnings ($):</label>
+                                <input type="number" class="form-control" id="bsEquityRetained" value="75000" step="1000" onchange="calculateBalanceSheet()">
+                            </div>
+                            <button class="btn btn-success w-100 mb-2 text-white" onclick="calculateBalanceSheet()"><i class="fas fa-sync me-2"></i>Recalculate</button>
+                            <button class="btn btn-outline-secondary w-100" onclick="printBS()"><i class="fas fa-print me-2"></i>Print</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0">Balance Sheet Summary & Key Ratios</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <h6 class="text-info">ASSETS</h6>
+                                    <div class="mb-2"><small>Current Assets:</small> <strong id="bsCurrent">$0</strong></div>
+                                    <div class="mb-2"><small>Fixed Assets:</small> <strong id="bsFixed">$0</strong></div>
+                                    <div class="mb-3 pb-3 border-bottom"><small>Total Assets:</small> <strong class="text-success" id="bsTotalAssets">$0</strong></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-info">LIABILITIES & EQUITY</h6>
+                                    <div class="mb-2"><small>Current Liab:</small> <strong id="bsCurrentLiab">$0</strong></div>
+                                    <div class="mb-2"><small>Long-term Liab:</small> <strong id="bsLongLiab">$0</strong></div>
+                                    <div class="mb-2"><small>Total Liabilities:</small> <strong id="bsTotalLiab">$0</strong></div>
+                                    <div class="mb-3 pb-3 border-bottom"><small>Total Equity:</small> <strong id="bsEquity">$0</strong></div>
+                                </div>
+                            </div>
+                            <h6 class="text-warning">Financial Ratios</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="alert alert-secondary mb-2 py-2">
+                                        <small>Current Ratio</small>
+                                        <div class="h6 mb-0" id="bsCurrentRatio">0.00</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-secondary mb-2 py-2">
+                                        <small>Debt-to-Equity</small>
+                                        <div class="h6 mb-0" id="bsDebtEquity">0.00</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-secondary mb-2 py-2">
+                                        <small>Asset Turnover</small>
+                                        <div class="h6 mb-0" id="bsAssetTurnover">N/A</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-secondary mb-2 py-2">
+                                        <small>Equity Ratio</small>
+                                        <div class="h6 mb-0" id="bsEquityRatio">0.00%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="balanceChart" class="mt-3" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- P&L Analysis -->
+        <div class="tab-pane fade" id="pl" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0">P&L Inputs</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Period:</label>
+                                <select class="form-control" id="plPeriod" onchange="calculatePL()">
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="annual" selected>Annual</option>
+                                </select>
+                            </div>
+                            <h6 class="mb-3">Revenue & Costs</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Total Revenue ($):</label>
+                                <input type="number" class="form-control" id="plRevenue" value="500000" step="1000" onchange="calculatePL()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Cost of Goods Sold ($):</label>
+                                <input type="number" class="form-control" id="plCOGS" value="200000" step="1000" onchange="calculatePL()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Operating Expenses ($):</label>
+                                <input type="number" class="form-control" id="plOpex" value="150000" step="1000" onchange="calculatePL()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Depreciation & Amortization ($):</label>
+                                <input type="number" class="form-control" id="plDepr" value="20000" step="1000" onchange="calculatePL()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Interest Expense ($):</label>
+                                <input type="number" class="form-control" id="plInterest" value="10000" step="1000" onchange="calculatePL()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Tax Rate (%):</label>
+                                <input type="number" class="form-control" id="plTaxRate" value="25" step="0.5" min="0" max="100" onchange="calculatePL()">
+                            </div>
+                            <button class="btn btn-success w-100 mb-2" onclick="calculatePL()"><i class="fas fa-sync me-2"></i>Recalculate</button>
+                            <button class="btn btn-outline-secondary w-100" onclick="printTable('plTable', 'P&L Statement')"><i class="fas fa-print me-2"></i>Print</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0">Profit & Loss Statement</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-dark table-sm mb-0" id="plTable">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th>Line Item</th>
+                                            <th class="text-end">Amount ($)</th>
+                                            <th class="text-end">% of Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Revenue</td>
+                                            <td class="text-end"><strong id="pl_revenue">$0</strong></td>
+                                            <td class="text-end"><strong>100%</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4">COGS</td>
+                                            <td class="text-end"><strong id="pl_cogs">$0</strong></td>
+                                            <td class="text-end"><strong id="pl_cogs_pct">0%</strong></td>
+                                        </tr>
+                                        <tr class="table-secondary">
+                                            <td><strong>Gross Profit</strong></td>
+                                            <td class="text-end"><strong id="pl_gp">$0</strong></td>
+                                            <td class="text-end"><strong id="pl_gp_pct">0%</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4">Operating Expenses</td>
+                                            <td class="text-end"><strong id="pl_opex">$0</strong></td>
+                                            <td class="text-end"><strong id="pl_opex_pct">0%</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4">Depreciation & Amortization</td>
+                                            <td class="text-end"><strong id="pl_depr">$0</strong></td>
+                                            <td class="text-end"><strong id="pl_depr_pct">0%</strong></td>
+                                        </tr>
+                                        <tr class="table-secondary">
+                                            <td><strong>Operating Income (EBIT)</strong></td>
+                                            <td class="text-end"><strong id="pl_ebit">$0</strong></td>
+                                            <td class="text-end"><strong id="pl_ebit_pct">0%</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4">Interest Expense</td>
+                                            <td class="text-end"><strong id="pl_interest">$0</strong></td>
+                                            <td class="text-end"><strong id="pl_interest_pct">0%</strong></td>
+                                        </tr>
+                                        <tr class="table-secondary">
+                                            <td><strong>Pre-tax Income</strong></td>
+                                            <td class="text-end"><strong id="pl_pretax">$0</strong></td>
+                                            <td class="text-end"><strong id="pl_pretax_pct">0%</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4">Income Tax</td>
+                                            <td class="text-end"><strong id="pl_tax">$0</strong></td>
+                                            <td class="text-end"><strong id="pl_tax_pct">0%</strong></td>
+                                        </tr>
+                                        <tr class="table-success">
+                                            <td><strong>Net Income</strong></td>
+                                            <td class="text-end"><strong id="pl_ni">$0</strong></td>
+                                            <td class="text-end"><strong id="pl_ni_pct">0%</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="alert alert-info mb-0 py-2">
+                                            <small>Net Profit Margin</small>
+                                            <div class="h6 mb-0" id="pl_npm">0%</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="alert alert-info mb-0 py-2">
+                                            <small>Gross Profit Margin</small>
+                                            <div class="h6 mb-0" id="pl_gpm">0%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="plChart" class="mt-3" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Break-Even Analysis -->
+        <div class="tab-pane fade" id="breakeven" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0">Break-Even Inputs</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="mb-3">Product Information</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Selling Price per Unit ($):</label>
+                                <input type="number" class="form-control" id="bePrice" value="50" step="0.01" min="0.01" onchange="calculateBreakEven()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Variable Cost per Unit ($):</label>
+                                <input type="number" class="form-control" id="beVariable" value="20" step="0.01" min="0" onchange="calculateBreakEven()">
+                            </div>
+                            <h6 class="mb-3 mt-4">Fixed Costs</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Monthly Fixed Costs ($):</label>
+                                <input type="number" class="form-control" id="beFixed" value="10000" step="100" min="0" onchange="calculateBreakEven()">
+                            </div>
+                            <h6 class="mb-3 mt-4">Analysis Period</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Units to Project:</label>
+                                <input type="number" class="form-control" id="beUnits" value="500" step="10" min="1" onchange="calculateBreakEven()">
+                            </div>
+                            <button class="btn btn-success w-100 mb-2" onclick="calculateBreakEven()"><i class="fas fa-sync me-2"></i>Recalculate</button>
+                            <button class="btn btn-outline-secondary w-100" onclick="printTable('breakEvenTable', 'Break-Even Analysis')"><i class="fas fa-print me-2"></i>Print</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0">Break-Even Analysis</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="alert alert-success">
+                                        <small class="d-block">Break-Even Units</small>
+                                        <h4 class="mb-0" id="be_units">0</h4>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-success">
+                                        <small class="d-block">Break-Even Revenue ($)</small>
+                                        <h4 class="mb-0" id="be_revenue">$0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="alert alert-info py-2 mb-0">
+                                        <small>Contribution Margin</small>
+                                        <div class="h6 mb-0" id="be_cm">$0</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-info py-2 mb-0">
+                                        <small>Margin Ratio</small>
+                                        <div class="h6 mb-0" id="be_ratio">0%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-dark table-sm mb-0">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th>Units</th>
+                                            <th class="text-end">Revenue ($)</th>
+                                            <th class="text-end">Variable Cost ($)</th>
+                                            <th class="text-end">Fixed Cost ($)</th>
+                                            <th class="text-end">Total Cost ($)</th>
+                                            <th class="text-end">Profit ($)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="breakEvenTable">
+                                        <tr><td colspan="6" class="text-center text-muted">Click Calculate to generate</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="breakEvenChart" class="mt-3" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scenario Planning -->
+        <div class="tab-pane fade" id="scenario" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <!-- Scenario Setup -->
+                    <div class="card bg-dark border-secondary mb-4">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Scenario Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">Set your base case values, then adjust percentage variations for best and worst scenarios to identify risks and opportunities.</p>
+                            <div class="row mb-4">
+                                <div class="col-lg-4">
+                                    <h6 class="text-warning"><i class="fas fa-chart-line me-2"></i>Base Case Inputs</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Annual Revenue ($):</label>
+                                        <input type="number" class="form-control" id="scenRevenue" value="1000000" step="10000" onchange="calculateScenarios()">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">COGS (% of Revenue):</label>
+                                        <input type="number" class="form-control" id="scenCOGS" value="40" step="1" min="0" max="100" onchange="calculateScenarios()">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Operating Expenses ($):</label>
+                                        <input type="number" class="form-control" id="scenOpex" value="250000" step="10000" onchange="calculateScenarios()">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Tax Rate (%):</label>
+                                        <input type="number" class="form-control" id="scenTax" value="25" step="1" min="0" max="100" onchange="calculateScenarios()">
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <h6 class="text-success"><i class="fas fa-arrow-up me-2"></i>Optimistic Scenario</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Revenue Change (%):</label>
+                                        <input type="number" class="form-control" id="scenOptRevenue" value="20" step="5" onchange="calculateScenarios()">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">COGS Change (%):</label>
+                                        <input type="number" class="form-control" id="scenOptCOGS" value="-5" step="5" onchange="calculateScenarios()">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Opex Change (%):</label>
+                                        <input type="number" class="form-control" id="scenOptOpex" value="-10" step="5" onchange="calculateScenarios()">
+                                    </div>
+                                    <button class="btn btn-success w-100" onclick="calculateScenarios()"><i class="fas fa-sync me-2"></i>Update</button>
+                                </div>
+                                <div class="col-lg-4">
+                                    <h6 class="text-danger"><i class="fas fa-arrow-down me-2"></i>Pessimistic Scenario</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Revenue Change (%):</label>
+                                        <input type="number" class="form-control" id="scenPesRevenue" value="-20" step="5" onchange="calculateScenarios()">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">COGS Change (%):</label>
+                                        <input type="number" class="form-control" id="scenPesCOGS" value="10" step="5" onchange="calculateScenarios()">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Opex Change (%):</label>
+                                        <input type="number" class="form-control" id="scenPesOpex" value="15" step="5" onchange="calculateScenarios()">
+                                    </div>
+                                    <button class="btn btn-danger w-100" onclick="calculateScenarios()"><i class="fas fa-sync me-2"></i>Update</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Comparison -->
+                    <div class="card bg-dark border-secondary mb-4">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0"><i class="fas fa-table me-2"></i>Financial Comparison Across Scenarios</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-dark table-sm">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th>Metric</th>
+                                            <th class="text-end">Pessimistic</th>
+                                            <th class="text-end">Base Case</th>
+                                            <th class="text-end">Optimistic</th>
+                                            <th class="text-end">Range ($)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Revenue</strong></td>
+                                            <td class="text-end text-danger" id="scen_rev_pes">$0</td>
+                                            <td class="text-end text-warning" id="scen_rev_base">$0</td>
+                                            <td class="text-end text-success" id="scen_rev_opt">$0</td>
+                                            <td class="text-end fw-bold" id="scen_rev_range">$0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>COGS</td>
+                                            <td class="text-end" id="scen_cogs_pes">$0</td>
+                                            <td class="text-end" id="scen_cogs_base">$0</td>
+                                            <td class="text-end" id="scen_cogs_opt">$0</td>
+                                            <td class="text-end" id="scen_cogs_range">$0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Gross Profit</td>
+                                            <td class="text-end" id="scen_gp_pes">$0</td>
+                                            <td class="text-end" id="scen_gp_base">$0</td>
+                                            <td class="text-end" id="scen_gp_opt">$0</td>
+                                            <td class="text-end" id="scen_gp_range">$0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Operating Expenses</td>
+                                            <td class="text-end" id="scen_opex_pes">$0</td>
+                                            <td class="text-end" id="scen_opex_base">$0</td>
+                                            <td class="text-end" id="scen_opex_opt">$0</td>
+                                            <td class="text-end" id="scen_opex_range">$0</td>
+                                        </tr>
+                                        <tr class="table-secondary fw-bold">
+                                            <td>Operating Income (EBIT)</td>
+                                            <td class="text-end" id="scen_oi_pes">$0</td>
+                                            <td class="text-end" id="scen_oi_base">$0</td>
+                                            <td class="text-end" id="scen_oi_opt">$0</td>
+                                            <td class="text-end" id="scen_oi_range">$0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Tax (25%)</td>
+                                            <td class="text-end" id="scen_tax_pes">$0</td>
+                                            <td class="text-end" id="scen_tax_base">$0</td>
+                                            <td class="text-end" id="scen_tax_opt">$0</td>
+                                            <td class="text-end" id="scen_tax_range">$0</td>
+                                        </tr>
+                                        <tr class="table-success fw-bold">
+                                            <td>Net Income</td>
+                                            <td class="text-end" id="scen_ni_pes">$0</td>
+                                            <td class="text-end" id="scen_ni_base">$0</td>
+                                            <td class="text-end" id="scen_ni_opt">$0</td>
+                                            <td class="text-end" id="scen_ni_range">$0</td>
+                                        </tr>
+                                        <tr class="table-info fw-bold">
+                                            <td>Net Profit Margin (%)</td>
+                                            <td class="text-end" id="scen_npm_pes">0%</td>
+                                            <td class="text-end" id="scen_npm_base">0%</td>
+                                            <td class="text-end" id="scen_npm_opt">0%</td>
+                                            <td class="text-end" id="scen_npm_range">0%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk & Opportunity Analysis -->
+                    <div class="row mb-4">
+                        <div class="col-lg-6">
+                            <div class="card bg-dark border-danger">
+                                <div class="card-header bg-danger">
+                                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Identified Risks</h5>
+                                </div>
+                                <div class="card-body" id="risksList">
+                                    <p class="text-muted">Risks will appear here...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card bg-dark border-success">
+                                <div class="card-header bg-success">
+                                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Identified Opportunities</h5>
+                                </div>
+                                <div class="card-body" id="opportunitiesList">
+                                    <p class="text-muted">Opportunities will appear here...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sensitivity Analysis -->
+                    <div class="card bg-dark border-secondary mb-4">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Sensitivity Analysis - Impact on Net Income</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">Shows which variables have the most impact on profitability (±10% change):</p>
+                            <div id="sensitivityTable"></div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <canvas id="scenarioChart" style="max-height: 350px;" class="mb-4"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    let cfChart, plChart, breakEvenChart, balanceChart, scenarioChart;
+
+    function formatCurrency(value) {
+        return '$' + parseFloat(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
+
+    function formatCurrencyDecimal(value) {
+        return '$' + parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function printTable(tableId, title) {
+        const table = document.getElementById(tableId);
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<h2>' + title + '</h2>');
+        printWindow.document.write(table.outerHTML);
+        printWindow.print();
+    }
+
+    function printBS() {
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<h2>Balance Sheet</h2>');
+        printWindow.document.write(document.querySelector('.tab-pane.active').querySelector('.card').outerHTML);
+        printWindow.print();
+    }
+
+    window.calculateCashFlow = function() {
+        const periods = parseInt(document.getElementById('cfPeriods').value) || 0;
+        const opening = parseFloat(document.getElementById('cfOpeningBalance').value) || 0;
+        const inflows = parseFloat(document.getElementById('cfInflows').value) || 0;
+        const outflows = parseFloat(document.getElementById('cfOutflows').value) || 0;
+        const investment = parseFloat(document.getElementById('cfInvestment').value) || 0;
+        const financing = parseFloat(document.getElementById('cfFinancing').value) || 0;
+
+        let html = '';
+        let balance = opening;
+        let totalCF = 0;
+        const balances = [];
+
+        for (let i = 1; i <= periods; i++) {
+            const operating = inflows - outflows;
+            const totalChange = operating - investment + financing;
+            const closing = balance + totalChange;
+            totalCF += totalChange;
+            balances.push(closing);
+
+            html += `<tr>
+                <td>${i}</td>
+                <td>${formatCurrency(balance)}</td>
+                <td class="${operating >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(operating)}</td>
+                <td class="text-danger">${formatCurrency(-investment)}</td>
+                <td class="text-success">${formatCurrency(financing)}</td>
+                <td class="fw-bold">${formatCurrency(closing)}</td>
+            </tr>`;
+            balance = closing;
+        }
+
+        document.getElementById('cashflowTable').innerHTML = html;
+        document.getElementById('cf_avg').textContent = formatCurrency(totalCF / periods);
+        document.getElementById('cf_cumulative').textContent = formatCurrency(totalCF);
+        document.getElementById('cf_ending').textContent = formatCurrency(balance);
+
+        // Update chart
+        if (cfChart) cfChart.destroy();
+        const ctx = document.getElementById('cashflowChart');
+        cfChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: periods}, (_, i) => 'M' + (i+1)),
+                datasets: [{
+                    label: 'Closing Cash Balance',
+                    data: balances,
+                    borderColor: '#00c853',
+                    backgroundColor: 'rgba(0, 200, 83, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { labels: { color: '#fff' } } },
+                scales: { y: { ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } }
+            }
+        });
+    };
+
+    window.calculateBalanceSheet = function() {
+        const assetsCash = parseFloat(document.getElementById('bsAssetsCash').value) || 0;
+        const assetsAR = parseFloat(document.getElementById('bsAssetsAR').value) || 0;
+        const assetsInv = parseFloat(document.getElementById('bsAssetsInventory').value) || 0;
+        const assetsFixed = parseFloat(document.getElementById('bsAssetsFixed').value) || 0;
+
+        const liabAP = parseFloat(document.getElementById('bsLiabilitiesAP').value) || 0;
+        const liabShort = parseFloat(document.getElementById('bsLiabilitiesShortDebt').value) || 0;
+        const liabLong = parseFloat(document.getElementById('bsLiabilitiesLongDebt').value) || 0;
+        const equityRetained = parseFloat(document.getElementById('bsEquityRetained').value) || 0;
+
+        const current = assetsCash + assetsAR + assetsInv;
+        const totalAssets = current + assetsFixed;
+
+        const currentLiab = liabAP + liabShort;
+        const totalLiab = currentLiab + liabLong;
+        const totalEquity = equityRetained;
+
+        document.getElementById('bsCurrent').textContent = formatCurrency(current);
+        document.getElementById('bsFixed').textContent = formatCurrency(assetsFixed);
+        document.getElementById('bsTotalAssets').textContent = formatCurrency(totalAssets);
+
+        document.getElementById('bsCurrentLiab').textContent = formatCurrency(currentLiab);
+        document.getElementById('bsLongLiab').textContent = formatCurrency(liabLong);
+        document.getElementById('bsTotalLiab').textContent = formatCurrency(totalLiab);
+        document.getElementById('bsEquity').textContent = formatCurrency(totalEquity);
+
+        const debtEquity = totalEquity > 0 ? (totalLiab / totalEquity).toFixed(2) : 0;
+        const currentRatio = currentLiab > 0 ? (current / currentLiab).toFixed(2) : 0;
+        const equityRatio = totalAssets > 0 ? ((totalEquity / totalAssets) * 100).toFixed(1) : 0;
+
+        document.getElementById('bsDebtEquity').textContent = debtEquity;
+        document.getElementById('bsCurrentRatio').textContent = currentRatio;
+        document.getElementById('bsEquityRatio').textContent = equityRatio + '%';
+        document.getElementById('bsAssetTurnover').textContent = 'N/A';
+
+        if (balanceChart) balanceChart.destroy();
+        const ctx = document.getElementById('balanceChart');
+        balanceChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Current Assets', 'Fixed Assets', 'Current Liab', 'Long-term Liab', 'Equity'],
+                datasets: [{
+                    data: [current, assetsFixed, currentLiab, liabLong, totalEquity],
+                    backgroundColor: ['#00c853', '#1a73e8', '#fbbc04', '#ea4335', '#34a853']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#fff' } } }
+            }
+        });
+    };
+
+    window.calculatePL = function() {
+        const revenue = parseFloat(document.getElementById('plRevenue').value) || 0;
+        const cogs = parseFloat(document.getElementById('plCOGS').value) || 0;
+        const opex = parseFloat(document.getElementById('plOpex').value) || 0;
+        const depr = parseFloat(document.getElementById('plDepr').value) || 0;
+        const interest = parseFloat(document.getElementById('plInterest').value) || 0;
+        const taxRate = parseFloat(document.getElementById('plTaxRate').value) || 0;
+
+        const gp = revenue - cogs;
+        const ebit = gp - opex - depr;
+        const pretax = ebit - interest;
+        const tax = pretax > 0 ? pretax * (taxRate / 100) : 0;
+        const ni = pretax - tax;
+
+        const getPct = (value) => revenue > 0 ? ((value / revenue) * 100).toFixed(1) : 0;
+
+        document.getElementById('pl_revenue').textContent = formatCurrency(revenue);
+        document.getElementById('pl_cogs').textContent = formatCurrency(cogs);
+        document.getElementById('pl_cogs_pct').textContent = getPct(cogs) + '%';
+        document.getElementById('pl_gp').textContent = formatCurrency(gp);
+        document.getElementById('pl_gp_pct').textContent = getPct(gp) + '%';
+        document.getElementById('pl_opex').textContent = formatCurrency(opex);
+        document.getElementById('pl_opex_pct').textContent = getPct(opex) + '%';
+        document.getElementById('pl_depr').textContent = formatCurrency(depr);
+        document.getElementById('pl_depr_pct').textContent = getPct(depr) + '%';
+        document.getElementById('pl_ebit').textContent = formatCurrency(ebit);
+        document.getElementById('pl_ebit_pct').textContent = getPct(ebit) + '%';
+        document.getElementById('pl_interest').textContent = formatCurrency(interest);
+        document.getElementById('pl_interest_pct').textContent = getPct(interest) + '%';
+        document.getElementById('pl_pretax').textContent = formatCurrency(pretax);
+        document.getElementById('pl_pretax_pct').textContent = getPct(pretax) + '%';
+        document.getElementById('pl_tax').textContent = formatCurrency(tax);
+        document.getElementById('pl_tax_pct').textContent = getPct(tax) + '%';
+        document.getElementById('pl_ni').textContent = formatCurrency(ni);
+        document.getElementById('pl_ni_pct').textContent = getPct(ni) + '%';
+
+        const npm = revenue > 0 ? ((ni / revenue) * 100).toFixed(1) : 0;
+        const gpm = revenue > 0 ? ((gp / revenue) * 100).toFixed(1) : 0;
+        document.getElementById('pl_npm').textContent = npm + '%';
+        document.getElementById('pl_gpm').textContent = gpm + '%';
+
+        if (plChart) plChart.destroy();
+        const ctx = document.getElementById('plChart');
+        plChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Revenue', 'COGS', 'Gross Profit', 'EBIT', 'Pre-tax', 'Net Income'],
+                datasets: [{
+                    label: 'Amount ($)',
+                    data: [revenue, cogs, gp, ebit, pretax, ni],
+                    backgroundColor: ['#34a853', '#ea4335', '#fbbc04', '#1a73e8', '#4285f4', '#00c853']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#fff' } } },
+                scales: { y: { ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } }
+            }
+        });
+    };
+
+    window.calculateBreakEven = function() {
+        const price = parseFloat(document.getElementById('bePrice').value) || 1;
+        const variable = parseFloat(document.getElementById('beVariable').value) || 0;
+        const fixed = parseFloat(document.getElementById('beFixed').value) || 0;
+        const units = parseInt(document.getElementById('beUnits').value) || 100;
+
+        const cm = price - variable;
+        const beUnits = cm > 0 ? Math.ceil(fixed / cm) : 0;
+        const beRevenue = beUnits * price;
+        const ratio = cm > 0 ? ((cm / price) * 100).toFixed(1) : 0;
+
+        document.getElementById('be_units').textContent = beUnits.toLocaleString();
+        document.getElementById('be_revenue').textContent = formatCurrency(beRevenue);
+        document.getElementById('be_cm').textContent = formatCurrencyDecimal(cm);
+        document.getElementById('be_ratio').textContent = ratio + '%';
+
+        let html = '';
+        const step = Math.max(1, Math.floor(units / 10));
+
+        const revenues = [], costs = [], profits = [], unitLabels = [];
+
+        for (let u = 0; u <= units; u += step) {
+            const rev = u * price;
+            const vc = u * variable;
+            const tc = vc + fixed;
+            const profit = rev - tc;
+
+            unitLabels.push(u);
+            revenues.push(rev);
+            costs.push(tc);
+            profits.push(profit);
+
+            const rowClass = u === beUnits ? 'table-warning' : '';
+            html += `<tr class="${rowClass}">
+                <td>${u.toLocaleString()}</td>
+                <td class="text-end">${formatCurrency(rev)}</td>
+                <td class="text-end">${formatCurrency(vc)}</td>
+                <td class="text-end">${formatCurrency(fixed)}</td>
+                <td class="text-end">${formatCurrency(tc)}</td>
+                <td class="text-end fw-bold ${profit >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(profit)}</td>
+            </tr>`;
+        }
+
+        document.getElementById('breakEvenTable').innerHTML = html;
+
+        if (breakEvenChart) breakEvenChart.destroy();
+        const ctx = document.getElementById('breakEvenChart');
+        breakEvenChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: unitLabels,
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: revenues,
+                        borderColor: '#00c853',
+                        backgroundColor: 'rgba(0, 200, 83, 0.1)',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Total Cost',
+                        data: costs,
+                        borderColor: '#ea4335',
+                        backgroundColor: 'rgba(234, 67, 53, 0.1)',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Profit',
+                        data: profits,
+                        borderColor: '#fbbc04',
+                        backgroundColor: 'rgba(251, 188, 4, 0.1)',
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#fff' } } },
+                scales: { y: { ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } }
+            }
+        });
+    };
+
+    window.calculateScenarios = function() {
+        try {
+            const baseRevenue = parseFloat(document.getElementById('scenRevenue').value) || 1000000;
+            const baseCOGSPct = parseFloat(document.getElementById('scenCOGS').value) || 40;
+            const baseOpex = parseFloat(document.getElementById('scenOpex').value) || 250000;
+            const taxRate = parseFloat(document.getElementById('scenTax').value) || 25;
+
+            const optRevChange = parseFloat(document.getElementById('scenOptRevenue').value) || 20;
+            const optCOGSChange = parseFloat(document.getElementById('scenOptCOGS').value) || -5;
+            const optOpexChange = parseFloat(document.getElementById('scenOptOpex').value) || -10;
+
+            const pesRevChange = parseFloat(document.getElementById('scenPesRevenue').value) || -20;
+            const pesCOGSChange = parseFloat(document.getElementById('scenPesCOGS').value) || 10;
+            const pesOpexChange = parseFloat(document.getElementById('scenPesOpex').value) || 15;
+
+            const scenarios = {
+                pessimistic: {
+                    revenue: baseRevenue * (1 + (pesRevChange / 100)),
+                    cogsPct: Math.max(0, Math.min(100, baseCOGSPct + pesCOGSChange)),
+                    opex: baseOpex * (1 + (pesOpexChange / 100))
+                },
+                base: {
+                    revenue: baseRevenue,
+                    cogsPct: baseCOGSPct,
+                    opex: baseOpex
+                },
+                optimistic: {
+                    revenue: baseRevenue * (1 + (optRevChange / 100)),
+                    cogsPct: Math.max(0, Math.min(100, baseCOGSPct + optCOGSChange)),
+                    opex: baseOpex * (1 + (optOpexChange / 100))
+                }
+            };
+
+            const results = {};
+            ['pessimistic', 'base', 'optimistic'].forEach(scenario => {
+                const data = scenarios[scenario];
+                const cogs = data.revenue * (data.cogsPct / 100);
+                const gp = data.revenue - cogs;
+                const oi = gp - data.opex;
+                const tax = oi > 0 ? oi * (taxRate / 100) : 0;
+                const ni = oi - tax;
+                const npm = data.revenue > 0 ? ((ni / data.revenue) * 100) : 0;
+
+                results[scenario] = { revenue: data.revenue, cogs, gp, opex: data.opex, oi, tax, ni, npm };
+
+                document.getElementById(`scen_rev_${scenario}`).textContent = formatCurrency(data.revenue);
+                document.getElementById(`scen_cogs_${scenario}`).textContent = formatCurrency(cogs);
+                document.getElementById(`scen_gp_${scenario}`).textContent = formatCurrency(gp);
+                document.getElementById(`scen_opex_${scenario}`).textContent = formatCurrency(data.opex);
+                document.getElementById(`scen_oi_${scenario}`).textContent = formatCurrency(oi);
+                document.getElementById(`scen_tax_${scenario}`).textContent = formatCurrency(tax);
+                document.getElementById(`scen_ni_${scenario}`).textContent = formatCurrency(ni);
+                document.getElementById(`scen_npm_${scenario}`).textContent = npm.toFixed(1) + '%';
+            });
+
+            // Calculate and set ranges safely
+            const revRangeEl = document.getElementById('scen_rev_range');
+            const cogsRangeEl = document.getElementById('scen_cogs_range');
+            const gpRangeEl = document.getElementById('scen_gp_range');
+            const opexRangeEl = document.getElementById('scen_opex_range');
+            const oiRangeEl = document.getElementById('scen_oi_range');
+            const taxRangeEl = document.getElementById('scen_tax_range');
+            const niRangeEl = document.getElementById('scen_ni_range');
+            const npmRangeEl = document.getElementById('scen_npm_range');
+
+            if (revRangeEl) revRangeEl.textContent = formatCurrency(results.optimistic.revenue - results.pessimistic.revenue);
+            if (cogsRangeEl) cogsRangeEl.textContent = formatCurrency(results.optimistic.cogs - results.pessimistic.cogs);
+            if (gpRangeEl) gpRangeEl.textContent = formatCurrency(results.optimistic.gp - results.pessimistic.gp);
+            if (opexRangeEl) opexRangeEl.textContent = formatCurrency(results.optimistic.opex - results.pessimistic.opex);
+            if (oiRangeEl) oiRangeEl.textContent = formatCurrency(results.optimistic.oi - results.pessimistic.oi);
+            if (taxRangeEl) taxRangeEl.textContent = formatCurrency(results.optimistic.tax - results.pessimistic.tax);
+            if (niRangeEl) niRangeEl.textContent = formatCurrency(results.optimistic.ni - results.pessimistic.ni);
+            if (npmRangeEl && results.base.ni !== 0) npmRangeEl.textContent = ((results.optimistic.ni - results.pessimistic.ni) / Math.abs(results.base.ni) * 100).toFixed(1) + '%';
+
+            // Risk & Opportunity Analysis
+            let risks = '', opportunities = '';
+            const niPes = results.pessimistic.ni;
+            const niOpt = results.optimistic.ni;
+            
+            if (niPes < 0) risks += `<div class="alert alert-danger mb-2"><i class="fas fa-times-circle me-2"></i><strong>Loss Risk:</strong> Pessimistic case shows loss of ${formatCurrency(Math.abs(niPes))}</div>`;
+            if (results.pessimistic.revenue > 0 && results.pessimistic.oi / results.pessimistic.revenue < 0.1) risks += `<div class="alert alert-danger mb-2"><i class="fas fa-times-circle me-2"></i><strong>Low Margins:</strong> Operating margin ${(results.pessimistic.oi / results.pessimistic.revenue * 100).toFixed(1)}%</div>`;
+            if (pesRevChange < -15) risks += `<div class="alert alert-warning mb-2"><i class="fas fa-exclamation-circle me-2"></i><strong>High Revenue Risk:</strong> ${Math.abs(pesRevChange)}% decline possible</div>`;
+            if (baseRevenue > 0 && baseOpex > baseRevenue * 0.4) risks += `<div class="alert alert-warning mb-2"><i class="fas fa-exclamation-circle me-2"></i><strong>High OpEx:</strong> Expenses exceed 40% of revenue</div>`;
+            if (!risks) risks = `<div class="alert alert-info mb-0"><i class="fas fa-check-circle me-2"></i>No major risks identified</div>`;
+
+            if (results.base.ni > 0 && niOpt > results.base.ni * 1.5) opportunities += `<div class="alert alert-success mb-2"><i class="fas fa-star me-2"></i><strong>Strong Upside:</strong> 50%+ net income growth possible</div>`;
+            if (optRevChange > 15) opportunities += `<div class="alert alert-success mb-2"><i class="fas fa-star me-2"></i><strong>Growth Upside:</strong> ${optRevChange}% revenue growth achievable</div>`;
+            if (optCOGSChange < -5) opportunities += `<div class="alert alert-success mb-2"><i class="fas fa-star me-2"></i><strong>Cost Savings:</strong> COGS can drop ${Math.abs(optCOGSChange)}%</div>`;
+            if (results.optimistic.npm > 20) opportunities += `<div class="alert alert-success mb-2"><i class="fas fa-star me-2"></i><strong>Margin Opportunity:</strong> ${results.optimistic.npm.toFixed(1)}% net margin possible</div>`;
+            if (!opportunities) opportunities = `<div class="alert alert-info mb-0"><i class="fas fa-lightbulb me-2"></i>Focus on operational efficiency gains</div>`;
+
+            const risksEl = document.getElementById('risksList');
+            const oppEl = document.getElementById('opportunitiesList');
+            if (risksEl) risksEl.innerHTML = risks;
+            if (oppEl) oppEl.innerHTML = opportunities;
+
+            // Sensitivity Analysis
+            let sensitivityHtml = '<div class="row">';
+            const vars = [
+                { name: 'Revenue', id: 'scenRevenue' },
+                { name: 'COGS %', id: 'scenCOGS' },
+                { name: 'OpEx', id: 'scenOpex' }
+            ];
+            
+            vars.forEach((v) => {
+                const baseVal = parseFloat(document.getElementById(v.id).value) || 0;
+                const val10Pct = v.id === 'scenCOGS' ? baseVal + 10 : baseVal * 1.1;
+                const val10PctNeg = v.id === 'scenCOGS' ? baseVal - 10 : baseVal * 0.9;
+                
+                let calcBase = (baseRevenue * (1 - baseCOGSPct/100) - baseOpex) * (1 - taxRate/100);
+                let calc10Pct, calc10PctNeg;
+                
+                if (v.id === 'scenRevenue') {
+                    calc10Pct = (val10Pct * (1 - baseCOGSPct/100) - baseOpex) * (1 - taxRate/100);
+                    calc10PctNeg = (val10PctNeg * (1 - baseCOGSPct/100) - baseOpex) * (1 - taxRate/100);
+                } else if (v.id === 'scenCOGS') {
+                    calc10Pct = (baseRevenue * (1 - Math.min(100, val10Pct)/100) - baseOpex) * (1 - taxRate/100);
+                    calc10PctNeg = (baseRevenue * (1 - Math.max(0, val10PctNeg)/100) - baseOpex) * (1 - taxRate/100);
+                } else {
+                    calc10Pct = (baseRevenue * (1 - baseCOGSPct/100) - val10Pct) * (1 - taxRate/100);
+                    calc10PctNeg = (baseRevenue * (1 - baseCOGSPct/100) - val10PctNeg) * (1 - taxRate/100);
+                }
+                
+                const impact = Math.abs(calc10Pct - calcBase);
+                const color = impact > 50000 ? 'danger' : impact > 20000 ? 'warning' : 'info';
+                
+                sensitivityHtml += `<div class="col-md-6 mb-3"><div class="alert alert-${color} mb-0"><strong>${v.name}</strong><br>±10% sensitivity: <strong>${formatCurrency(impact)}</strong></div></div>`;
+            });
+            sensitivityHtml += '</div>';
+            const sensEl = document.getElementById('sensitivityTable');
+            if (sensEl) sensEl.innerHTML = sensitivityHtml;
+
+            if (scenarioChart) scenarioChart.destroy();
+            const ctx = document.getElementById('scenarioChart');
+            if (ctx) {
+                scenarioChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Revenue', 'COGS', 'Gross Profit', 'Opex', 'Operating Income', 'Net Income'],
+                        datasets: [
+                            { label: 'Pessimistic', data: [results.pessimistic.revenue, results.pessimistic.cogs, results.pessimistic.gp, results.pessimistic.opex, results.pessimistic.oi, results.pessimistic.ni], backgroundColor: '#ea4335' },
+                            { label: 'Base Case', data: [results.base.revenue, results.base.cogs, results.base.gp, results.base.opex, results.base.oi, results.base.ni], backgroundColor: '#fbbc04' },
+                            { label: 'Optimistic', data: [results.optimistic.revenue, results.optimistic.cogs, results.optimistic.gp, results.optimistic.opex, results.optimistic.oi, results.optimistic.ni], backgroundColor: '#34a853' }
+                        ]
+                    },
+                    options: { responsive: true, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+                });
+            }
+        } catch (error) {
+            console.error('Scenario calculation error:', error);
+        }
+    };
+
+    window.printTable = printTable;
+    window.printBS = printBS;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        calculateCashFlow();
+        calculateBalanceSheet();
+        calculatePL();
+        calculateBreakEven();
+        calculateScenarios();
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Unlock Project Management - IDA{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 overflow-hidden">
+                <div class="card-header bg-dark text-white text-center py-4">
+                    <i class="fas fa-lock fa-3x mb-3 text-warning"></i>
+                    <h2 class="fw-bold">Project Management Tools</h2>
+                </div>
+                <div class="card-body p-5 text-center">
+                    <p class="lead mb-4">
+                        Unlock professional project management tools for 30 days.
+                    </p>
+                    
+                    <div class="pricing-card mb-4 p-4 bg-light rounded border">
+                        <h3 class="display-6 text-dark mb-2">25 Credits</h3>
+                        <p class="text-muted">Access for 1 Month</p>
+                        <hr>
+                        <ul class="list-unstyled text-start d-inline-block text-black">
+                            <li><i class="fas fa-check text-success me-2"></i> Team Coordination</li>
+                            <li><i class="fas fa-check text-success me-2"></i> Task Tracking</li>
+                            <li><i class="fas fa-check text-success me-2"></i> Milestone Management</li>
+                            <li><i class="fas fa-check text-success me-2"></i> Integrated Dashboard</li>
+                        </ul>
+                    </div>
+
+                    {% if expiry %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-clock me-2"></i>
+                        Your previous access expired on {{ expiry.strftime('%B %d, %Y') }}.
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-3 col-lg-8 mx-auto">
+                        <a href="{{ url_for('project_management', unlock='true') }}" class="btn btn-primary btn-lg py-3 fw-bold">
+                            <i class="fas fa-unlock me-2"></i>Unlock Now
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            Back to Home
+                        </a>
+                    </div>
+                    
+                    <p class="mt-4 text-muted small">
+                        Credits will be deducted from your account. Access will automatically expire after 30 days.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

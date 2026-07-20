@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Execute - IDA{% endblock %}
+
+{% block content %}
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .embedded-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        background: white;
+    }
+
+    .embedded-toolbar {
+        background: #000;
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .toolbar-title {
+        font-size: clamp(0.9rem, 3vw, 1.1rem);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+    }
+
+    .toolbar-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        font-size: clamp(0.8rem, 2vw, 0.95rem);
+        white-space: nowrap;
+    }
+
+    .toolbar-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        color: white;
+        text-decoration: none;
+    }
+
+    @media (max-width: 576px) {
+        .embedded-toolbar {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .toolbar-title {
+            width: 100%;
+        }
+
+        .toolbar-btn {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+
+    .iframe-wrapper {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+    }
+
+    iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        position: absolute;
+        top: -50px;
+        left: 0;
+    }
+
+    .loading-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        display: none;
+        z-index: 10;
+    }
+
+    .loading-indicator.show {
+        display: block;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        color: #667eea;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+</style>
+
+<div class="embedded-container">
+    <div class="embedded-toolbar">
+        <h2 class="toolbar-title">
+            <i class="fas fa-external-link-alt"></i>
+            Execution Platform
+        </h2>
+        <div class="toolbar-actions">
+            <a href="{{ url_for('analysis_reports') }}" class="toolbar-btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <div class="iframe-wrapper">
+        <div class="loading-indicator show">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading Analytics Platform...</div>
+        </div>
+        <iframe src="https://vidhugupta1996.wixstudio.com/websiteforwebsites" id="contentFrame"></iframe>
+    </div>
+</div>
+
+<script>
+    // Hide loading indicator when iframe loads
+    document.getElementById('contentFrame').addEventListener('load', function() {
+        const loader = document.querySelector('.loading-indicator');
+        loader.classList.remove('show');
+    });
+
+    // Show loading indicator if it takes a while
+    setTimeout(() => {
+        const loader = document.querySelector('.loading-indicator');
+        if (loader.classList.contains('show')) {
+            // If still loading after 5 seconds, keep showing but soften
+            loader.style.opacity = '0.7';
+        }
+    }, 5000);
+</script>
+{% endblock %}
