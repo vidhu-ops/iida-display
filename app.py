@@ -6,7 +6,8 @@ from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-logging.basicConfig(level=logging.INFO if os.environ.get('VERCEL') else logging.DEBUG)
+IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
+logging.basicConfig(level=logging.INFO if IS_VERCEL else logging.DEBUG)
 
 
 class Base(DeclarativeBase):
@@ -48,9 +49,13 @@ database_url = os.environ.get('DATABASE_URL')
 if database_url and is_valid_database_url(database_url):
     database_url = normalize_database_url(database_url)
     logging.info('Using DATABASE_URL from environment')
+elif IS_VERCEL:
+    raise RuntimeError(
+        'DATABASE_URL must be set in Vercel project settings (Neon PostgreSQL connection string).'
+    )
 else:
     database_url = 'sqlite:///ida.db'
-    logging.info('No valid DATABASE_URL found, using SQLite for local development')
+    logging.info('No DATABASE_URL found, using SQLite for local development')
 
 if database_url.startswith('sqlite'):
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
@@ -61,25 +66,47 @@ if database_url.startswith('sqlite'):
     }
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    engine_options = {
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_recycle': 300,
         'pool_pre_ping': True,
+        'connect_args': {'sslmode': 'require'},
     }
-    if 'neon.tech' in database_url or os.environ.get('VERCEL'):
-        engine_options['connect_args'] = {'sslmode': 'require'}
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
 
 db.init_app(app)
+
+_db_ready = False
+
+
+def ensure_database():
+    global _db_ready
+    if _db_ready:
+        return
+    try:
+        with app.app_context():
+            db.create_all()
+        logging.info('Database tables ready')
+    except Exception as e:
+        logging.error(f'Database initialization failed: {e}')
+        if IS_VERCEL:
+            raise
+    _db_ready = True
+
+
+@app.before_request
+def _init_on_first_request():
+    ensure_database()
+
 
 with app.app_context():
     import models  # noqa: F401
     import routes  # noqa: F401
 
-    try:
-        db.create_all()
-        logging.info('Database tables created successfully')
-    except Exception as e:
-        logging.error(f'Failed to create database tables: {e}')
+
+@app.route('/health')
+def health():
+    return {'status': 'ok'}, 200
+
 
 if __name__ == '__main__':
+    ensure_database()
     app.run(host='0.0.0.0', port=5000, debug=True)
