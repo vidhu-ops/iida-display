@@ -2,7 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "app.py": {
-      "excludeFiles": "{attached_assets/**/*.png,attached_assets/**/*.jpg,attached_assets/**/*.zip,attached_assets/**/*.docx,attached_assets/**/*.jsx,tests/**,**/*.pyc}"
+      "excludeFiles": "{attached_assets/**/*.png,attached_assets/**/*.jpg,attached_assets/**/*.zip,attached_assets/**/*.docx,attached_assets/**/*.jsx,tests/**,**/*.pyc,replit-redirect/**}"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.iidatech.com" }],
+      "destination": "https://iida-display-nu.vercel.app/:path*",
+      "permanent": true
+    }
+  ]
 }
