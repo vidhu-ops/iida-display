@@ -35,16 +35,24 @@ Copy `.env.example` to `.env` and set:
 
 ## Deploy to Vercel
 
-1. Push this repo to GitHub.
-2. Import the project in [Vercel](https://vercel.com/new).
-3. **Required** — add these in Vercel → Settings → Environment Variables:
-   - `DATABASE_URL` — Neon pooled PostgreSQL URL (`postgresql://...?sslmode=require`)
-   - `SESSION_SECRET` — long random string
-   - `GEMINI_API_KEY` — for AI features
-4. Redeploy after adding env vars (Deployments → Redeploy).
-5. Vercel auto-detects Flask from `app.py`; static files are served from `public/`.
+This project is linked to **sheeyameela-4868s-projects/iida-display** on Vercel.
 
-If you see `FUNCTION_INVOCATION_FAILED`, open Vercel → Logs. The most common cause is a missing or invalid `DATABASE_URL`.
+Environment variables already configured on Vercel:
+- `DATABASE_URL` (Neon PostgreSQL)
+- `SESSION_SECRET`
+
+Optional — add in Vercel → Settings → Environment Variables:
+- `GEMINI_API_KEY` — required for AI report generation
+- `CASHFREE_*` — required for payments
+- `ZO_API_KEY` — required for mentor chat
+
+After pushing to GitHub, redeploy from the Vercel dashboard or run:
+
+```bash
+npx vercel --prod
+```
+
+Verify deployment: `https://your-app.vercel.app/health` should return `{"status":"ok"}`.
 
 ## Neon database
 

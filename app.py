@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
@@ -94,6 +94,8 @@ def ensure_database():
 
 @app.before_request
 def _init_on_first_request():
+    if request.path == '/health':
+        return
     ensure_database()
 
 
