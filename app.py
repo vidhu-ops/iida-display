@@ -47,7 +47,28 @@ def normalize_database_url(url):
     return url
 
 
-database_url = os.environ.get('DATABASE_URL')
+def resolve_database_url():
+    # Prefer an explicit DATABASE_URL, then fall back to the variables that the
+    # Vercel Neon integration provisions (which may carry a project prefix such
+    # as "iida_"). We scan for any *DATABASE_URL / *POSTGRES_URL style key.
+    direct = os.environ.get('DATABASE_URL')
+    if direct:
+        return direct
+    preferred_suffixes = (
+        'DATABASE_URL_UNPOOLED',
+        'POSTGRES_URL_NON_POOLING',
+        'DATABASE_URL',
+        'POSTGRES_URL',
+    )
+    for suffix in preferred_suffixes:
+        for key, value in os.environ.items():
+            if key.endswith(suffix) and value:
+                logging.info('Using database URL from environment key: %s', key)
+                return value
+    return None
+
+
+database_url = resolve_database_url()
 if database_url and is_valid_database_url(database_url):
     database_url = normalize_database_url(database_url)
     logging.info('Using DATABASE_URL from environment')
