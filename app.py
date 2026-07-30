@@ -173,10 +173,43 @@ def health():
 
 @app.route('/status')
 def status():
+    # Report which env key the DATABASE_URL was actually resolved from, whether
+    # we're on real Postgres (vs the SQLite fallback), and a live connectivity ping.
+    resolved_url = resolve_database_url()
+    resolved_key = None
+    if os.environ.get('DATABASE_URL'):
+        resolved_key = 'DATABASE_URL'
+    elif resolved_url:
+        for suffix in ('DATABASE_URL_UNPOOLED', 'POSTGRES_URL_NON_POOLING', 'DATABASE_URL', 'POSTGRES_URL'):
+            for key, value in os.environ.items():
+                if key.endswith(suffix) and value == resolved_url:
+                    resolved_key = key
+                    break
+            if resolved_key:
+                break
+
+    using_postgres = str(app.config.get('SQLALCHEMY_DATABASE_URI', '')).startswith('postgresql')
+
+    db_ping = None
+    db_ping_error = None
+    if not CONFIG_ERROR:
+        try:
+            from sqlalchemy import text
+            with app.app_context():
+                db.session.execute(text('SELECT 1'))
+            db_ping = True
+        except Exception as e:
+            db_ping = False
+            db_ping_error = str(e)
+
     return jsonify({
-        'status': 'ok' if not CONFIG_ERROR and not _db_error else 'degraded',
+        'status': 'ok' if not CONFIG_ERROR and not _db_error and db_ping else 'degraded',
         'vercel': IS_VERCEL,
-        'database_url_set': bool(os.environ.get('DATABASE_URL')),
+        'database_url_set': bool(resolved_url),
+        'database_url_source': resolved_key,
+        'using_postgres': using_postgres,
+        'database_ping': db_ping,
+        'database_ping_error': db_ping_error,
         'session_secret_set': bool(os.environ.get('SESSION_SECRET')),
         'gemini_key_set': bool(os.environ.get('GEMINI_API_KEY')),
         'config_error': CONFIG_ERROR,
