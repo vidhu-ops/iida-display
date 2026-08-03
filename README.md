@@ -23,36 +23,68 @@ Open http://localhost:5000
 
 ## Environment variables
 
-Copy `.env.example` to `.env` and set:
-
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes (prod) | Neon PostgreSQL connection string |
+| `DATABASE_URL` | Yes (prod) | Neon PostgreSQL connection string (`?sslmode=require`) |
 | `SESSION_SECRET` | Yes | Flask session signing key |
 | `GEMINI_API_KEY` | Yes | Google Gemini API key |
-| `CASHFREE_*` | No | Payment gateway credentials |
 | `ZO_API_KEY` | No | Mentor chat API |
+| `CASHFREE_*` | No | Payment gateway credentials |
+
+For Vercel, use `vercel.env.example` as the checklist.
 
 ## Deploy to Vercel
 
-This project is linked to **sheeyameela-4868s-projects/iida-display** on Vercel.
+Project: **sheeyameela-4868s-projects/iida-display**  
+Production URL: https://iida-display.vercel.app
 
-Environment variables already configured on Vercel:
-- `DATABASE_URL` (Neon PostgreSQL)
-- `SESSION_SECRET`
+### 1. Set environment variables
 
-Optional — add in Vercel → Settings → Environment Variables:
-- `GEMINI_API_KEY` — required for AI report generation
-- `CASHFREE_*` — required for payments
-- `ZO_API_KEY` — required for mentor chat
+In **Vercel → Settings → Environment Variables**, add (Production + Preview):
 
-After pushing to GitHub, redeploy from the Vercel dashboard or run:
+1. `DATABASE_URL` — Neon **pooled** URL ending with `?sslmode=require`
+2. `SESSION_SECRET` — e.g. `openssl rand -hex 32`
+3. `GEMINI_API_KEY` — from Google AI Studio
+
+Or fill `vercel.env.example` → `.env.vercel` and run:
+
+```bash
+cp vercel.env.example .env.vercel
+# edit .env.vercel with real values
+npx vercel login
+npx vercel link
+./scripts/push_vercel_env.sh
+```
+
+Neon Marketplace integration vars (`*_DATABASE_URL`, `*_POSTGRES_URL`) are also accepted if `DATABASE_URL` is unset.
+
+### 2. Redeploy
+
+After changing env vars you **must** redeploy:
 
 ```bash
 npx vercel --prod
 ```
 
-Verify deployment: `https://your-app.vercel.app/health` should return `{"status":"ok"}`.
+Or: Vercel → Deployments → ⋯ → Redeploy.
+
+### 3. Verify
+
+```bash
+curl -s https://iida-display.vercel.app/health
+curl -s https://iida-display.vercel.app/status
+```
+
+`/status` should show `database_ping: true` and `status: "ok"`.
+
+### Neon endpoint disabled?
+
+If `/status` reports `The endpoint has been disabled`:
+
+1. Open [Neon Console](https://console.neon.tech) and enable the compute, **or** create a new project
+2. Copy the pooled connection string
+3. Update `DATABASE_URL` on Vercel
+4. Redeploy
 
 ## Neon database
 

@@ -47,14 +47,39 @@ def normalize_database_url(url):
     return url
 
 
-database_url = os.environ.get('DATABASE_URL')
+def resolve_database_url():
+    """Resolve Postgres URL from DATABASE_URL or Vercel Neon integration vars.
+
+    The Neon marketplace integration may provision prefixed keys such as
+    ``iida_DATABASE_URL`` / ``iida_POSTGRES_URL``. Prefer an explicit
+    ``DATABASE_URL``, then scan for those suffixes.
+    """
+    direct = os.environ.get('DATABASE_URL')
+    if direct:
+        return direct
+    preferred_suffixes = (
+        'DATABASE_URL_UNPOOLED',
+        'POSTGRES_URL_NON_POOLING',
+        'DATABASE_URL',
+        'POSTGRES_URL',
+    )
+    for suffix in preferred_suffixes:
+        for key, value in os.environ.items():
+            if key.endswith(suffix) and value:
+                logging.info('Using database URL from environment key: %s', key)
+                return value
+    return None
+
+
+database_url = resolve_database_url()
 if database_url and is_valid_database_url(database_url):
     database_url = normalize_database_url(database_url)
     logging.info('Using DATABASE_URL from environment')
 elif IS_VERCEL:
     CONFIG_ERROR = (
         'DATABASE_URL is not set. Add your Neon PostgreSQL connection string '
-        'in Vercel → Settings → Environment Variables, then redeploy.'
+        'in Vercel → Settings → Environment Variables, then redeploy. '
+        'See vercel.env.example for the full required list.'
     )
     logging.error(CONFIG_ERROR)
     database_url = 'sqlite:////tmp/ida-fallback.db'
@@ -93,6 +118,7 @@ SETUP_TEMPLATE = """
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 48px auto; padding: 0 20px; line-height: 1.6; }
     code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
     .box { background: #fff3cd; border: 1px solid #ffecb5; padding: 16px; border-radius: 8px; }
+    ol { padding-left: 1.25rem; }
   </style>
 </head>
 <body>
@@ -103,8 +129,14 @@ SETUP_TEMPLATE = """
     <ul>
       <li><code>DATABASE_URL</code> — Neon PostgreSQL URL with <code>?sslmode=require</code></li>
       <li><code>SESSION_SECRET</code> — long random string</li>
-      <li><code>GEMINI_API_KEY</code> — Google Gemini API key (optional, for AI features)</li>
+      <li><code>GEMINI_API_KEY</code> — Google Gemini API key (for AI features)</li>
     </ul>
+    <p>If Neon reports <em>endpoint has been disabled</em>:</p>
+    <ol>
+      <li>Open the Neon console and enable the compute endpoint, or create a new project</li>
+      <li>Copy the pooled connection string</li>
+      <li>Update <code>DATABASE_URL</code> on Vercel and redeploy</li>
+    </ol>
   </div>
   <p><a href="/health">Check /health</a> · <a href="/status">Check /status</a></p>
 </body>
@@ -152,14 +184,67 @@ def health():
 
 @app.route('/status')
 def status():
+    resolved_url = resolve_database_url()
+    resolved_key = None
+    if os.environ.get('DATABASE_URL'):
+        resolved_key = 'DATABASE_URL'
+    elif resolved_url:
+        for suffix in (
+            'DATABASE_URL_UNPOOLED',
+            'POSTGRES_URL_NON_POOLING',
+            'DATABASE_URL',
+            'POSTGRES_URL',
+        ):
+            for key, value in os.environ.items():
+                if key.endswith(suffix) and value == resolved_url:
+                    resolved_key = key
+                    break
+            if resolved_key:
+                break
+
+    using_postgres = str(app.config.get('SQLALCHEMY_DATABASE_URI', '')).startswith('postgresql')
+
+    db_ping = None
+    db_ping_error = None
+    if not CONFIG_ERROR:
+        try:
+            from sqlalchemy import text
+            with app.app_context():
+                db.session.execute(text('SELECT 1'))
+            db_ping = True
+        except Exception as e:
+            db_ping = False
+            db_ping_error = str(e)
+
     return jsonify({
-        'status': 'ok' if not CONFIG_ERROR and not _db_error else 'degraded',
+        'status': 'ok' if not CONFIG_ERROR and not _db_error and db_ping else 'degraded',
         'vercel': IS_VERCEL,
-        'database_url_set': bool(os.environ.get('DATABASE_URL')),
+        'database_url_set': bool(resolved_url),
+        'database_url_source': resolved_key,
+        'using_postgres': using_postgres,
+        'database_ping': db_ping,
+        'database_ping_error': db_ping_error,
         'session_secret_set': bool(os.environ.get('SESSION_SECRET')),
         'gemini_key_set': bool(os.environ.get('GEMINI_API_KEY')),
         'config_error': CONFIG_ERROR,
         'database_error': _db_error,
+        'required_env': [
+            'DATABASE_URL',
+            'SESSION_SECRET',
+            'GEMINI_API_KEY',
+        ],
+        'optional_env': [
+            'ZO_API_KEY',
+            'ZO_BASE_URL',
+            'ZO_MODEL',
+            'ANTHROPIC_API_KEY',
+            'CASHFREE_APP_ID',
+            'CASHFREE_API_KEY',
+            'CASHFREE_API_URL',
+            'CASHFREE_FORM_ID',
+            'CASHFREE_SUBSCRIPTION_FORM_URL',
+            'CASHFREE_SUBSCRIPTION_FORM_ID',
+        ],
     }), 200
 
 
