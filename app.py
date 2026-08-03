@@ -10,6 +10,14 @@ IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
 logging.basicConfig(level=logging.INFO if IS_VERCEL else logging.DEBUG)
 
 CONFIG_ERROR = None
+DATABASE_URL_SOURCE = None
+
+DATABASE_URL_SUFFIXES = (
+    'DATABASE_URL',
+    'POSTGRES_URL',
+    'DATABASE_URL_UNPOOLED',
+    'POSTGRES_URL_NON_POOLING',
+)
 
 
 class Base(DeclarativeBase):
@@ -47,39 +55,86 @@ def normalize_database_url(url):
     return url
 
 
-def resolve_database_url():
-    """Resolve Postgres URL from DATABASE_URL or Vercel Neon integration vars.
+def collect_database_url_candidates():
+    """Return ordered (env_key, url) candidates from Vercel/Neon env vars."""
+    candidates = []
+    seen_urls = set()
 
-    The Neon marketplace integration may provision prefixed keys such as
-    ``iida_DATABASE_URL`` / ``iida_POSTGRES_URL``. Prefer an explicit
-    ``DATABASE_URL``, then scan for those suffixes.
-    """
-    direct = os.environ.get('DATABASE_URL')
-    if direct:
-        return direct
-    preferred_suffixes = (
-        'DATABASE_URL_UNPOOLED',
-        'POSTGRES_URL_NON_POOLING',
-        'DATABASE_URL',
-        'POSTGRES_URL',
+    def add(key, raw):
+        if not raw or not is_valid_database_url(raw):
+            return
+        url = normalize_database_url(raw)
+        if url in seen_urls:
+            return
+        seen_urls.add(url)
+        candidates.append((key, url))
+
+    add('DATABASE_URL', os.environ.get('DATABASE_URL'))
+
+    for suffix in DATABASE_URL_SUFFIXES:
+        for key, value in sorted(os.environ.items()):
+            if key == 'DATABASE_URL' or not key.endswith(suffix):
+                continue
+            add(key, value)
+
+    return candidates
+
+
+def probe_database_url(url):
+    """Return True when a Postgres URL accepts connections."""
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(
+        url,
+        connect_args={'sslmode': 'require'},
+        pool_pre_ping=True,
     )
-    for suffix in preferred_suffixes:
-        for key, value in os.environ.items():
-            if key.endswith(suffix) and value:
+    try:
+        with engine.connect() as conn:
+            conn.execute(text('SELECT 1'))
+        return True
+    except Exception as exc:
+        logging.warning('Database probe failed for %s: %s', url.split('@')[-1], exc)
+        return False
+    finally:
+        engine.dispose()
+
+
+def select_database_url():
+    """Pick the first reachable Postgres URL on Vercel; prefer env order locally."""
+    global DATABASE_URL_SOURCE
+
+    candidates = collect_database_url_candidates()
+    if not candidates:
+        DATABASE_URL_SOURCE = None
+        return None
+
+    if IS_VERCEL:
+        for key, url in candidates:
+            if probe_database_url(url):
+                DATABASE_URL_SOURCE = key
                 logging.info('Using database URL from environment key: %s', key)
-                return value
-    return None
+                return url
+        logging.error(
+            'No reachable database URL found among: %s',
+            ', '.join(key for key, _ in candidates),
+        )
+        DATABASE_URL_SOURCE = None
+        return None
+
+    DATABASE_URL_SOURCE = candidates[0][0]
+    logging.info('Using database URL from environment key: %s', DATABASE_URL_SOURCE)
+    return candidates[0][1]
 
 
-database_url = resolve_database_url()
+database_url = select_database_url()
 if database_url and is_valid_database_url(database_url):
-    database_url = normalize_database_url(database_url)
-    logging.info('Using DATABASE_URL from environment')
+    logging.info('Database URL configured')
 elif IS_VERCEL:
     CONFIG_ERROR = (
-        'DATABASE_URL is not set. Add your Neon PostgreSQL connection string '
-        'in Vercel → Settings → Environment Variables, then redeploy. '
-        'See vercel.env.example for the full required list.'
+        'No working DATABASE_URL found. Your Neon compute endpoint may be disabled. '
+        'Run ./scripts/provision_vercel_neon.sh (or add Neon via Vercel → Storage), '
+        'then redeploy. See vercel.env.example.'
     )
     logging.error(CONFIG_ERROR)
     database_url = 'sqlite:////tmp/ida-fallback.db'
@@ -116,7 +171,8 @@ SETUP_TEMPLATE = """
   <title>IIDA Display — Setup Required</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 48px auto; padding: 0 20px; line-height: 1.6; }
-    code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+    code, pre { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+    pre { padding: 12px; overflow-x: auto; }
     .box { background: #fff3cd; border: 1px solid #ffecb5; padding: 16px; border-radius: 8px; }
     ol { padding-left: 1.25rem; }
   </style>
@@ -125,17 +181,17 @@ SETUP_TEMPLATE = """
   <h1>IIDA Display — setup required</h1>
   <div class="box">
     <p><strong>{{ message }}</strong></p>
-    <p>Add these in <strong>Vercel → Settings → Environment Variables</strong>, then redeploy:</p>
-    <ul>
-      <li><code>DATABASE_URL</code> — Neon PostgreSQL URL with <code>?sslmode=require</code></li>
-      <li><code>SESSION_SECRET</code> — long random string</li>
-      <li><code>GEMINI_API_KEY</code> — Google Gemini API key (for AI features)</li>
-    </ul>
-    <p>If Neon reports <em>endpoint has been disabled</em>:</p>
+    <p><strong>Fastest fix</strong> (from this repo on your machine):</p>
+    <pre>npx vercel login
+npx vercel link
+./scripts/provision_vercel_neon.sh
+npx vercel --prod</pre>
+    <p>Or in the Vercel dashboard:</p>
     <ol>
-      <li>Open the Neon console and enable the compute endpoint, or create a new project</li>
-      <li>Copy the pooled connection string</li>
-      <li>Update <code>DATABASE_URL</code> on Vercel and redeploy</li>
+      <li>Storage → Add → <strong>Neon</strong> (creates a fresh <code>DATABASE_URL</code>)</li>
+      <li>Delete any old/broken <code>DATABASE_URL</code> first if Neon says endpoint disabled</li>
+      <li>Set <code>SESSION_SECRET</code> and <code>GEMINI_API_KEY</code></li>
+      <li>Redeploy</li>
     </ol>
   </div>
   <p><a href="/health">Check /health</a> · <a href="/status">Check /status</a></p>
@@ -184,24 +240,7 @@ def health():
 
 @app.route('/status')
 def status():
-    resolved_url = resolve_database_url()
-    resolved_key = None
-    if os.environ.get('DATABASE_URL'):
-        resolved_key = 'DATABASE_URL'
-    elif resolved_url:
-        for suffix in (
-            'DATABASE_URL_UNPOOLED',
-            'POSTGRES_URL_NON_POOLING',
-            'DATABASE_URL',
-            'POSTGRES_URL',
-        ):
-            for key, value in os.environ.items():
-                if key.endswith(suffix) and value == resolved_url:
-                    resolved_key = key
-                    break
-            if resolved_key:
-                break
-
+    candidates = collect_database_url_candidates()
     using_postgres = str(app.config.get('SQLALCHEMY_DATABASE_URI', '')).startswith('postgresql')
 
     db_ping = None
@@ -219,8 +258,9 @@ def status():
     return jsonify({
         'status': 'ok' if not CONFIG_ERROR and not _db_error and db_ping else 'degraded',
         'vercel': IS_VERCEL,
-        'database_url_set': bool(resolved_url),
-        'database_url_source': resolved_key,
+        'database_url_set': bool(candidates),
+        'database_url_source': DATABASE_URL_SOURCE,
+        'database_url_candidates': [key for key, _ in candidates],
         'using_postgres': using_postgres,
         'database_ping': db_ping,
         'database_ping_error': db_ping_error,
@@ -228,22 +268,11 @@ def status():
         'gemini_key_set': bool(os.environ.get('GEMINI_API_KEY')),
         'config_error': CONFIG_ERROR,
         'database_error': _db_error,
+        'fix': 'Run ./scripts/provision_vercel_neon.sh then redeploy' if not db_ping else None,
         'required_env': [
             'DATABASE_URL',
             'SESSION_SECRET',
             'GEMINI_API_KEY',
-        ],
-        'optional_env': [
-            'ZO_API_KEY',
-            'ZO_BASE_URL',
-            'ZO_MODEL',
-            'ANTHROPIC_API_KEY',
-            'CASHFREE_APP_ID',
-            'CASHFREE_API_KEY',
-            'CASHFREE_API_URL',
-            'CASHFREE_FORM_ID',
-            'CASHFREE_SUBSCRIPTION_FORM_URL',
-            'CASHFREE_SUBSCRIPTION_FORM_ID',
         ],
     }), 200
 
