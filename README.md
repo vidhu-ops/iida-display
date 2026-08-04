@@ -2,7 +2,10 @@
 
 Flask web app for business intelligence, planning, mentor chat, and payments. Configured for **Vercel** + **Neon PostgreSQL**.
 
-## Quick deploy to Vercel
+## Deploy to Vercel
+
+> **Deploy failing with "Provisioning integrations failed"?**  
+> See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — usually Neon branch limit (10 max) or a disabled endpoint.
 
 ### Option A — One command (recommended)
 
