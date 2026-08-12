@@ -1,5 +1,23 @@
 # Vercel + Neon deployment troubleshooting
 
+## Error: `syntax error at or near "#!/"` (SQLSTATE 42601)
+
+**Symptom:** Neon SQL Editor or query logs show bash script lines starting with `#!/usr/bin/env bash`.
+
+**Cause:** `scripts/provision_vercel_neon.sh` was pasted or uploaded into the **Neon SQL Editor**. That file is a **terminal script**, not SQL.
+
+**Fix:**
+
+1. **Do not** paste shell scripts into Neon SQL.
+2. **Option A (recommended):** Just redeploy the app — tables are created automatically on first request via SQLAlchemy (`db.create_all()`).
+3. **Option B:** In Neon SQL Editor, run **`schema.sql`** from this repo (valid SQL only).
+4. **Option C:** On your machine, run the shell script in a **terminal** (not SQL):
+   ```bash
+   npx vercel login && npx vercel link && ./scripts/provision_vercel_neon.sh
+   ```
+
+---
+
 ## Error: `Provisioning integrations failed`
 
 **Symptom:** Build never starts. Vercel logs show:

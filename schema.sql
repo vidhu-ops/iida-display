@@ -1,4 +1,8 @@
 -- IIDA Display schema (also created automatically via SQLAlchemy db.create_all())
+--
+-- ⚠️  Use THIS file in the Neon SQL Editor — NOT scripts/provision_vercel_neon.sh
+--     (that .sh file is a terminal script; pasting it into SQL causes
+--     ERROR: syntax error at or near "#!/" (SQLSTATE 42601))
 
 CREATE TABLE IF NOT EXISTS "user" (
   id SERIAL PRIMARY KEY,

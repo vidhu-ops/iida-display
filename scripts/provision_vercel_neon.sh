@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# ⚠️  RUN THIS IN YOUR TERMINAL — NOT IN THE NEON SQL EDITOR
+#     Neon SQL only accepts SQL (see schema.sql). Bash scripts cause:
+#     ERROR: syntax error at or near "#!/" (SQLSTATE 42601)
+#
 # Provision a fresh Neon database for this Vercel project and redeploy.
 #
 # Fixes: "The endpoint has been disabled" when DATABASE_URL points at a dead

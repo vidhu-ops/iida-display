@@ -264,7 +264,14 @@ def ensure_database():
         logging.info('Database tables ready')
         _db_ready = True
     except Exception as e:
-        _db_error = str(e)
+        err = str(e)
+        _db_error = err
+        if '#!/' in err or 'syntax error at or near' in err.lower():
+            _db_error = (
+                'Invalid SQL was run against Neon (often from pasting a .sh shell script '
+                'into the SQL editor). Tables are created by the app automatically — '
+                'redeploy and visit the site, or run schema.sql in Neon SQL if needed.'
+            )
         logging.error(f'Database initialization failed: {e}')
 
 

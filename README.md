@@ -9,7 +9,7 @@ Flask web app for business intelligence, planning, mentor chat, and payments. Co
 
 ### Option A — One command (recommended)
 
-From this repo on your machine:
+From this repo on your machine (**terminal**, not Neon SQL editor):
 
 ```bash
 npx vercel login
@@ -18,6 +18,8 @@ npx vercel link
 ```
 
 This removes a stale `DATABASE_URL`, provisions Neon via the Vercel Marketplace, and deploys to production.
+
+> **Note:** Do not paste `provision_vercel_neon.sh` into the Neon SQL Editor — use `schema.sql` if you need manual SQL, or let the app create tables on deploy.
 
 ### Option B — Vercel dashboard
 
