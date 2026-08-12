@@ -41,7 +41,7 @@ Verify: `curl -s https://iida-display.vercel.app/status` should show `"database_
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | Neon pooled URL (`?sslmode=require`) — auto-set by Neon integration |
+| `DATABASE_URL` or `database_POSTGRES_URL` | Yes | Neon pooled URL — auto-set by Neon integration |
 | `SESSION_SECRET` | Yes | Flask session key |
 | `GROQ_API_KEY` | Yes | Groq API key for AI reports |
 

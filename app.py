@@ -13,11 +13,54 @@ CONFIG_ERROR = None
 DATABASE_URL_SOURCE = None
 
 DATABASE_URL_SUFFIXES = (
-    'DATABASE_URL',
-    'POSTGRES_URL',
-    'DATABASE_URL_UNPOOLED',
-    'POSTGRES_URL_NON_POOLING',
+    ('POSTGRES_URL', 10),
+    ('DATABASE_URL', 20),
+    ('POSTGRES_PRISMA_URL', 30),
+    ('POSTGRES_URL_NON_POOLING', 40),
+    ('DATABASE_URL_UNPOOLED', 50),
 )
+
+COMPONENT_SUFFIXES = {
+    'host': ('POSTGRES_HOST', 'PGHOST'),
+    'user': ('PGUSER', 'POSTGRES_USER'),
+    'password': ('PGPASSWORD', 'POSTGRES_PASSWORD'),
+    'database': ('POSTGRES_DATABASE', 'PGDATABASE'),
+}
+
+
+def find_env_value(suffixes):
+    """Return (value, env_key) for the first matching suffix (any prefix)."""
+    for suffix in suffixes:
+        direct = os.environ.get(suffix)
+        if direct:
+            return direct, suffix
+        matches = sorted(
+            (key, value)
+            for key, value in os.environ.items()
+            if key.endswith(suffix) and value
+        )
+        if matches:
+            return matches[0][1], matches[0][0]
+    return None, None
+
+
+def build_database_url_from_components():
+    """Build a Postgres URL from Neon/Vercel split env vars (e.g. database_POSTGRES_HOST)."""
+    host, host_key = find_env_value(COMPONENT_SUFFIXES['host'])
+    user, _ = find_env_value(COMPONENT_SUFFIXES['user'])
+    password, _ = find_env_value(COMPONENT_SUFFIXES['password'])
+    database, _ = find_env_value(COMPONENT_SUFFIXES['database'])
+    if not all([host, user, password, database]):
+        return None, None
+
+    from urllib.parse import quote_plus
+
+    url = (
+        f'postgresql://{quote_plus(user)}:{quote_plus(password)}'
+        f'@{host}/{database}?sslmode=require'
+    )
+    source = f'{host_key}_components' if host_key else 'postgres_components'
+    return url, source
 
 
 class Base(DeclarativeBase):
@@ -60,24 +103,35 @@ def collect_database_url_candidates():
     candidates = []
     seen_urls = set()
 
-    def add(key, raw):
+    def add(key, raw, priority):
         if not raw or not is_valid_database_url(raw):
             return
         url = normalize_database_url(raw)
         if url in seen_urls:
             return
         seen_urls.add(url)
-        candidates.append((key, url))
+        candidates.append((priority, key, url))
 
-    add('DATABASE_URL', os.environ.get('DATABASE_URL'))
+    suffix_exclusions = {
+        'POSTGRES_URL': ('POSTGRES_URL_NON_POOLING', 'POSTGRES_PRISMA_URL'),
+        'DATABASE_URL': ('DATABASE_URL_UNPOOLED',),
+    }
 
-    for suffix in DATABASE_URL_SUFFIXES:
+    for suffix, priority in DATABASE_URL_SUFFIXES:
         for key, value in sorted(os.environ.items()):
-            if key == 'DATABASE_URL' or not key.endswith(suffix):
+            if not key.endswith(suffix):
                 continue
-            add(key, value)
+            excluded = suffix_exclusions.get(suffix, ())
+            if any(key.endswith(excluded_suffix) for excluded_suffix in excluded):
+                continue
+            add(key, value, priority)
 
-    return candidates
+    built_url, built_key = build_database_url_from_components()
+    if built_url:
+        add(built_key, built_url, 60)
+
+    candidates.sort(key=lambda item: (item[0], item[1]))
+    return [(key, url) for _, key, url in candidates]
 
 
 def probe_database_url(url):
@@ -272,7 +326,7 @@ def status():
         'database_error': _db_error,
         'fix': 'Add Neon via Vercel Storage for persistent DATABASE_URL' if DB_WARNING or not db_ping else None,
         'required_env': [
-            'DATABASE_URL',
+            'DATABASE_URL or database_POSTGRES_URL (Neon integration)',
             'SESSION_SECRET',
             'GROQ_API_KEY',
         ],
