@@ -25,7 +25,7 @@ This removes a stale `DATABASE_URL`, provisions Neon via the Vercel Marketplace,
 2. **Storage → Add → Neon** (creates `DATABASE_URL` automatically)
 3. Add **Environment Variables** (Production):
    - `SESSION_SECRET` — run `openssl rand -hex 32`
-   - `GEMINI_API_KEY` — from [Google AI Studio](https://aistudio.google.com/apikey)
+   - `GROQ_API_KEY` — from [Groq Console](https://console.groq.com/keys)
 4. **Deployments → Redeploy**
 
 ### Fix: "endpoint has been disabled"
@@ -43,7 +43,7 @@ Verify: `curl -s https://iida-display.vercel.app/status` should show `"database_
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | Neon pooled URL (`?sslmode=require`) — auto-set by Neon integration |
 | `SESSION_SECRET` | Yes | Flask session key |
-| `GEMINI_API_KEY` | Yes | Google Gemini API key |
+| `GROQ_API_KEY` | Yes | Groq API key for AI reports |
 
 See `vercel.env.example` for optional vars (ZO mentor chat, Cashfree payments).
 
@@ -65,4 +65,4 @@ Add repository secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` to a
 
 - Python 3.11 + Flask
 - SQLAlchemy + PostgreSQL (Neon)
-- Google Gemini for AI reports
+- Groq (Llama) for AI reports

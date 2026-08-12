@@ -39,7 +39,7 @@ if ! grep -q '^DATABASE_URL=' .env.local; then
   exit 1
 fi
 
-echo "==> Ensure SESSION_SECRET and GEMINI_API_KEY are set on Vercel."
+echo "==> Ensure SESSION_SECRET and GROQ_API_KEY are set on Vercel."
 echo "    (Add them in Settings → Environment Variables if missing.)"
 
 echo "==> Deploying to production ..."

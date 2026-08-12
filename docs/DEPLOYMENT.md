@@ -93,7 +93,7 @@ Please:
 2. Enable automatic deletion of obsolete Neon branches
 3. Set production branch to main (not v0/neon-database-connection-71d97174)
 4. Replace broken DATABASE_URL (ep-shy-wave-aexq3vgh disabled endpoint) with a working Neon connection
-5. Confirm SESSION_SECRET and GEMINI_API_KEY are set for Production
+5. Confirm SESSION_SECRET and GROQ_API_KEY are set for Production
 6. Redeploy production and verify /status shows database_ping: true
 ```
 

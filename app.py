@@ -128,15 +128,15 @@ def select_database_url():
 
 
 database_url = select_database_url()
+DB_WARNING = None
 if database_url and is_valid_database_url(database_url):
     logging.info('Database URL configured')
 elif IS_VERCEL:
-    CONFIG_ERROR = (
-        'No working DATABASE_URL found. Your Neon compute endpoint may be disabled. '
-        'Run ./scripts/provision_vercel_neon.sh (or add Neon via Vercel → Storage), '
-        'then redeploy. See vercel.env.example.'
+    DB_WARNING = (
+        'No working DATABASE_URL found. Using temporary SQLite storage on this instance. '
+        'Add Neon via Vercel Storage for persistent data.'
     )
-    logging.error(CONFIG_ERROR)
+    logging.warning(DB_WARNING)
     database_url = 'sqlite:////tmp/ida-fallback.db'
 else:
     database_url = 'sqlite:///ida.db'
@@ -190,7 +190,7 @@ npx vercel --prod</pre>
     <ol>
       <li>Storage → Add → <strong>Neon</strong> (creates a fresh <code>DATABASE_URL</code>)</li>
       <li>Delete any old/broken <code>DATABASE_URL</code> first if Neon says endpoint disabled</li>
-      <li>Set <code>SESSION_SECRET</code> and <code>GEMINI_API_KEY</code></li>
+      <li>Set <code>SESSION_SECRET</code> and <code>GROQ_API_KEY</code></li>
       <li>Redeploy</li>
     </ol>
   </div>
@@ -265,14 +265,16 @@ def status():
         'database_ping': db_ping,
         'database_ping_error': db_ping_error,
         'session_secret_set': bool(os.environ.get('SESSION_SECRET')),
-        'gemini_key_set': bool(os.environ.get('GEMINI_API_KEY')),
+        'groq_key_set': bool(os.environ.get('GROQ_API_KEY')),
+        'groq_model': os.environ.get('GROQ_MODEL', 'llama-3.3-70b-versatile'),
         'config_error': CONFIG_ERROR,
+        'database_warning': DB_WARNING,
         'database_error': _db_error,
-        'fix': 'Run ./scripts/provision_vercel_neon.sh then redeploy' if not db_ping else None,
+        'fix': 'Add Neon via Vercel Storage for persistent DATABASE_URL' if DB_WARNING or not db_ping else None,
         'required_env': [
             'DATABASE_URL',
             'SESSION_SECRET',
-            'GEMINI_API_KEY',
+            'GROQ_API_KEY',
         ],
     }), 200
 
