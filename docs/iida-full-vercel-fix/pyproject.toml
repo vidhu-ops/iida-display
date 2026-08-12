@@ -1,0 +1,8 @@
+[project]
+name = "iidatech-api"
+version = "1.0.0"
+description = "IIDATECH FastAPI backend for Vercel"
+requires-python = ">=3.11,<3.14"
+
+[tool.vercel]
+entrypoint = "backend_api:app"

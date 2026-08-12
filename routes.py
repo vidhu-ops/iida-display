@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db
 from models import Report, IndexContent, User, ExecutionPlan, Feedback, Payment, MentorChat
 from pdf_processor import PDFProcessor, initialize_pdf_content
-from gemini_service import GeminiService, test_gemini_connection
+from gemini_service import GroqService, test_groq_connection
 from mentor_service import get_mentor_response
 import logging
 import os
@@ -43,10 +43,9 @@ def analyse():
         'subcategories': categories_dict
     }
     
-    # Test Gemini connection
-    gemini_status = test_gemini_connection()
-    if not gemini_status:
-        flash('Warning: Gemini API connection failed. Please check your API key configuration.', 'warning')
+    ai_status = test_groq_connection()
+    if not ai_status:
+        flash('Warning: Groq API connection failed. Please check your GROQ_API_KEY.', 'warning')
     
     # Get recent plans instead of reports
     recent_plans = ExecutionPlan.query.filter_by(user_id=current_user.id).order_by(ExecutionPlan.created_at.desc()).limit(5).all() if current_user.is_authenticated else []
@@ -54,7 +53,7 @@ def analyse():
     return render_template('analyse.html', 
                          dropdown_options=dropdown_options,
                          recent_plans=recent_plans,
-                         gemini_status=gemini_status)
+                         ai_status=ai_status)
 
 @app.route('/api/competitive-analysis', methods=['POST'])
 @login_required
@@ -68,8 +67,8 @@ def api_competitive_analysis():
         if not idea or not industry or not location:
             return jsonify({'error': 'Missing required fields'}), 400
 
-        gemini_service = GeminiService()
-        analysis = gemini_service.generate_competitive_analysis(idea, industry, location)
+        ai_service = GroqService()
+        analysis = ai_service.generate_competitive_analysis(idea, industry, location)
 
         if not analysis:
             return jsonify({'error': 'Failed to generate competitive analysis. Please try again.'}), 500
@@ -371,10 +370,10 @@ def generate_report():
         current_user.deduct_credits(credits_needed)
         db.session.commit()
         
-        # Generate initial report structure using Gemini
+        # Generate initial report structure using Groq
         try:
-            gemini_service = GeminiService()
-            report_content = gemini_service.generate_comprehensive_report(question)
+            ai_service = GroqService()
+            report_content = ai_service.generate_comprehensive_report(question)
         except Exception as gen_error:
             logging.error(f"Error generating report structure: {gen_error}")
             flash('Error initializing report. Please try again.', 'error')
@@ -429,8 +428,8 @@ def generate_section():
         return jsonify({'error': 'Missing required parameters'}), 400
         
     try:
-        gemini_service = GeminiService()
-        content = gemini_service.generate_section(question, category, subcategory, int(section_id))
+        ai_service = GroqService()
+        content = ai_service.generate_section(question, category, subcategory, int(section_id))
         return jsonify({'content': content})
     except Exception as e:
         logging.error(f"Error in dynamic section generation: {e}")
@@ -686,15 +685,21 @@ def initialize_content():
         flash('Failed to initialize knowledge base.', 'error')
     return redirect(url_for('index'))
 
+@app.route('/test_groq')
+def test_groq():
+    """Test Groq API connection"""
+    status = test_groq_connection()
+    if status:
+        flash('Groq API connection successful!', 'success')
+    else:
+        flash('Groq API connection failed. Please check your GROQ_API_KEY.', 'error')
+    return redirect(url_for('index'))
+
+
 @app.route('/test_gemini')
 def test_gemini():
-    """Test Gemini API connection"""
-    status = test_gemini_connection()
-    if status:
-        flash('Gemini API connection successful!', 'success')
-    else:
-        flash('Gemini API connection failed. Please check your API key.', 'error')
-    return redirect(url_for('index'))
+    """Legacy URL — redirects to Groq test"""
+    return redirect(url_for('test_groq'))
 
 @app.route('/shortcode.html')
 def shortcode():
@@ -734,7 +739,7 @@ def view_plan(plan_id):
 
 @app.route('/plan-it-out', methods=['GET', 'POST'])
 def plan_it_out():
-    """Plan It Out - Create execution plans with Gemini"""
+    """Plan It Out - Create execution plans with Groq"""
     if not current_user.is_authenticated:
         flash('Please log in or register to create plans.', 'error')
         return redirect(url_for('login'))
@@ -767,8 +772,8 @@ def plan_it_out():
             db.session.commit()
             
             # Generate execution plan
-            gemini_service = GeminiService()
-            plan_content = gemini_service.generate_execution_plan(event_type, problem_type, budget, currency, region, timeline)
+            ai_service = GroqService()
+            plan_content = ai_service.generate_execution_plan(event_type, problem_type, budget, currency, region, timeline)
             
             if not plan_content:
                 # Refund if failed
@@ -854,9 +859,8 @@ def chat():
         if not user_message:
             return jsonify({'response': 'How can I help you today?'})
             
-        # Use Gemini to generate a response
-        gemini_service = GeminiService()
-        response_text = gemini_service.generate_chat_response(user_message)
+        ai_service = GroqService()
+        response_text = ai_service.generate_chat_response(user_message)
         
         return jsonify({'response': response_text})
     except Exception as e:

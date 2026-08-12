@@ -1,0 +1,2 @@
+# Vercel Python runtime (FastAPI backend)
+-r requirements-api.txt

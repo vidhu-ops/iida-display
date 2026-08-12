@@ -1,0 +1,14 @@
+# FastAPI backend deploy — keep backend_api.py, backend/, iidatech/
+web/
+streamlit_app.py
+opportunity_workspaces/
+datasets/
+business_build_outputs/
+scripts/
+tools/
+tests/
+Dockerfile*
+docker-compose.yml
+.replit
+run-dev.ps1
+*.ps1

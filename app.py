@@ -10,6 +10,57 @@ IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
 logging.basicConfig(level=logging.INFO if IS_VERCEL else logging.DEBUG)
 
 CONFIG_ERROR = None
+DATABASE_URL_SOURCE = None
+
+DATABASE_URL_SUFFIXES = (
+    ('POSTGRES_URL', 10),
+    ('DATABASE_URL', 20),
+    ('POSTGRES_PRISMA_URL', 30),
+    ('POSTGRES_URL_NON_POOLING', 40),
+    ('DATABASE_URL_UNPOOLED', 50),
+)
+
+COMPONENT_SUFFIXES = {
+    'host': ('POSTGRES_HOST', 'PGHOST'),
+    'user': ('PGUSER', 'POSTGRES_USER'),
+    'password': ('PGPASSWORD', 'POSTGRES_PASSWORD'),
+    'database': ('POSTGRES_DATABASE', 'PGDATABASE'),
+}
+
+
+def find_env_value(suffixes):
+    """Return (value, env_key) for the first matching suffix (any prefix)."""
+    for suffix in suffixes:
+        direct = os.environ.get(suffix)
+        if direct:
+            return direct, suffix
+        matches = sorted(
+            (key, value)
+            for key, value in os.environ.items()
+            if key.endswith(suffix) and value
+        )
+        if matches:
+            return matches[0][1], matches[0][0]
+    return None, None
+
+
+def build_database_url_from_components():
+    """Build a Postgres URL from Neon/Vercel split env vars (e.g. database_POSTGRES_HOST)."""
+    host, host_key = find_env_value(COMPONENT_SUFFIXES['host'])
+    user, _ = find_env_value(COMPONENT_SUFFIXES['user'])
+    password, _ = find_env_value(COMPONENT_SUFFIXES['password'])
+    database, _ = find_env_value(COMPONENT_SUFFIXES['database'])
+    if not all([host, user, password, database]):
+        return None, None
+
+    from urllib.parse import quote_plus
+
+    url = (
+        f'postgresql://{quote_plus(user)}:{quote_plus(password)}'
+        f'@{host}/{database}?sslmode=require'
+    )
+    source = f'{host_key}_components' if host_key else 'postgres_components'
+    return url, source
 
 
 class Base(DeclarativeBase):
@@ -47,16 +98,99 @@ def normalize_database_url(url):
     return url
 
 
-database_url = os.environ.get('DATABASE_URL')
-if database_url and is_valid_database_url(database_url):
-    database_url = normalize_database_url(database_url)
-    logging.info('Using DATABASE_URL from environment')
-elif IS_VERCEL:
-    CONFIG_ERROR = (
-        'DATABASE_URL is not set. Add your Neon PostgreSQL connection string '
-        'in Vercel → Settings → Environment Variables, then redeploy.'
+def collect_database_url_candidates():
+    """Return ordered (env_key, url) candidates from Vercel/Neon env vars."""
+    candidates = []
+    seen_urls = set()
+
+    def add(key, raw, priority):
+        if not raw or not is_valid_database_url(raw):
+            return
+        url = normalize_database_url(raw)
+        if url in seen_urls:
+            return
+        seen_urls.add(url)
+        candidates.append((priority, key, url))
+
+    suffix_exclusions = {
+        'POSTGRES_URL': ('POSTGRES_URL_NON_POOLING', 'POSTGRES_PRISMA_URL'),
+        'DATABASE_URL': ('DATABASE_URL_UNPOOLED',),
+    }
+
+    for suffix, priority in DATABASE_URL_SUFFIXES:
+        for key, value in sorted(os.environ.items()):
+            if not key.endswith(suffix):
+                continue
+            excluded = suffix_exclusions.get(suffix, ())
+            if any(key.endswith(excluded_suffix) for excluded_suffix in excluded):
+                continue
+            add(key, value, priority)
+
+    built_url, built_key = build_database_url_from_components()
+    if built_url:
+        add(built_key, built_url, 60)
+
+    candidates.sort(key=lambda item: (item[0], item[1]))
+    return [(key, url) for _, key, url in candidates]
+
+
+def probe_database_url(url):
+    """Return True when a Postgres URL accepts connections."""
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(
+        url,
+        connect_args={'sslmode': 'require'},
+        pool_pre_ping=True,
     )
-    logging.error(CONFIG_ERROR)
+    try:
+        with engine.connect() as conn:
+            conn.execute(text('SELECT 1'))
+        return True
+    except Exception as exc:
+        logging.warning('Database probe failed for %s: %s', url.split('@')[-1], exc)
+        return False
+    finally:
+        engine.dispose()
+
+
+def select_database_url():
+    """Pick the first reachable Postgres URL on Vercel; prefer env order locally."""
+    global DATABASE_URL_SOURCE
+
+    candidates = collect_database_url_candidates()
+    if not candidates:
+        DATABASE_URL_SOURCE = None
+        return None
+
+    if IS_VERCEL:
+        for key, url in candidates:
+            if probe_database_url(url):
+                DATABASE_URL_SOURCE = key
+                logging.info('Using database URL from environment key: %s', key)
+                return url
+        logging.error(
+            'No reachable database URL found among: %s',
+            ', '.join(key for key, _ in candidates),
+        )
+        DATABASE_URL_SOURCE = None
+        return None
+
+    DATABASE_URL_SOURCE = candidates[0][0]
+    logging.info('Using database URL from environment key: %s', DATABASE_URL_SOURCE)
+    return candidates[0][1]
+
+
+database_url = select_database_url()
+DB_WARNING = None
+if database_url and is_valid_database_url(database_url):
+    logging.info('Database URL configured')
+elif IS_VERCEL:
+    DB_WARNING = (
+        'No working DATABASE_URL found. Using temporary SQLite storage on this instance. '
+        'Add Neon via Vercel Storage for persistent data.'
+    )
+    logging.warning(DB_WARNING)
     database_url = 'sqlite:////tmp/ida-fallback.db'
 else:
     database_url = 'sqlite:///ida.db'
@@ -91,20 +225,28 @@ SETUP_TEMPLATE = """
   <title>IIDA Display — Setup Required</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 48px auto; padding: 0 20px; line-height: 1.6; }
-    code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+    code, pre { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+    pre { padding: 12px; overflow-x: auto; }
     .box { background: #fff3cd; border: 1px solid #ffecb5; padding: 16px; border-radius: 8px; }
+    ol { padding-left: 1.25rem; }
   </style>
 </head>
 <body>
   <h1>IIDA Display — setup required</h1>
   <div class="box">
     <p><strong>{{ message }}</strong></p>
-    <p>Add these in <strong>Vercel → Settings → Environment Variables</strong>, then redeploy:</p>
-    <ul>
-      <li><code>DATABASE_URL</code> — Neon PostgreSQL URL with <code>?sslmode=require</code></li>
-      <li><code>SESSION_SECRET</code> — long random string</li>
-      <li><code>GEMINI_API_KEY</code> — Google Gemini API key (optional, for AI features)</li>
-    </ul>
+    <p><strong>Fastest fix</strong> (from this repo on your machine):</p>
+    <pre>npx vercel login
+npx vercel link
+./scripts/provision_vercel_neon.sh
+npx vercel --prod</pre>
+    <p>Or in the Vercel dashboard:</p>
+    <ol>
+      <li>Storage → Add → <strong>Neon</strong> (creates a fresh <code>DATABASE_URL</code>)</li>
+      <li>Delete any old/broken <code>DATABASE_URL</code> first if Neon says endpoint disabled</li>
+      <li>Set <code>SESSION_SECRET</code> and <code>GROQ_API_KEY</code></li>
+      <li>Redeploy</li>
+    </ol>
   </div>
   <p><a href="/health">Check /health</a> · <a href="/status">Check /status</a></p>
 </body>
@@ -122,7 +264,14 @@ def ensure_database():
         logging.info('Database tables ready')
         _db_ready = True
     except Exception as e:
-        _db_error = str(e)
+        err = str(e)
+        _db_error = err
+        if '#!/' in err or 'syntax error at or near' in err.lower():
+            _db_error = (
+                'Invalid SQL was run against Neon (often from pasting a .sh shell script '
+                'into the SQL editor). Tables are created by the app automatically — '
+                'redeploy and visit the site, or run schema.sql in Neon SQL if needed.'
+            )
         logging.error(f'Database initialization failed: {e}')
 
 
@@ -152,14 +301,42 @@ def health():
 
 @app.route('/status')
 def status():
+    candidates = collect_database_url_candidates()
+    using_postgres = str(app.config.get('SQLALCHEMY_DATABASE_URI', '')).startswith('postgresql')
+
+    db_ping = None
+    db_ping_error = None
+    if not CONFIG_ERROR:
+        try:
+            from sqlalchemy import text
+            with app.app_context():
+                db.session.execute(text('SELECT 1'))
+            db_ping = True
+        except Exception as e:
+            db_ping = False
+            db_ping_error = str(e)
+
     return jsonify({
-        'status': 'ok' if not CONFIG_ERROR and not _db_error else 'degraded',
+        'status': 'ok' if not CONFIG_ERROR and not _db_error and db_ping else 'degraded',
         'vercel': IS_VERCEL,
-        'database_url_set': bool(os.environ.get('DATABASE_URL')),
+        'database_url_set': bool(candidates),
+        'database_url_source': DATABASE_URL_SOURCE,
+        'database_url_candidates': [key for key, _ in candidates],
+        'using_postgres': using_postgres,
+        'database_ping': db_ping,
+        'database_ping_error': db_ping_error,
         'session_secret_set': bool(os.environ.get('SESSION_SECRET')),
-        'gemini_key_set': bool(os.environ.get('GEMINI_API_KEY')),
+        'groq_key_set': bool(os.environ.get('GROQ_API_KEY')),
+        'groq_model': os.environ.get('GROQ_MODEL', 'llama-3.3-70b-versatile'),
         'config_error': CONFIG_ERROR,
+        'database_warning': DB_WARNING,
         'database_error': _db_error,
+        'fix': 'Add Neon via Vercel Storage for persistent DATABASE_URL' if DB_WARNING or not db_ping else None,
+        'required_env': [
+            'DATABASE_URL or database_POSTGRES_URL (Neon integration)',
+            'SESSION_SECRET',
+            'GROQ_API_KEY',
+        ],
     }), 200
 
 
