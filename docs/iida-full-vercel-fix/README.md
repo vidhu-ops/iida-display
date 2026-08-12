@@ -10,7 +10,7 @@ Error: Found app.py but it does not define a top-level "app" FastAPI instance.
 
 Vercel finds `app.py` (Streamlit) but your API is in **`backend_api.py`**.
 
-## The fix (one file minimum)
+## The fix (minimum — if `backend_api.py` already exists)
 
 Add **`pyproject.toml`** at repo root:
 
@@ -20,6 +20,8 @@ entrypoint = "backend_api:app"
 ```
 
 Do **not** use `_apply_research_patch:app` — that is a dev patch script.
+
+If your repo already has a working `backend_api.py` with `app = FastAPI(...)`, this single file is enough.
 
 ## Full fix (recommended)
 
